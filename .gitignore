@@ -1,0 +1,8 @@
+debug
+.vscode/
+*.zip
+*.exe
+spaloosh
+inprogress/
+release/
+testclient/
