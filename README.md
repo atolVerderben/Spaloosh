@@ -13,6 +13,18 @@ Spaloosh is a take on the traditional battleship game using a monster theme inst
 * Multiple Characters to choose from (all need a backstory though that is in progress)
 * Cross Platform
   * Since the entire game is written using the Go language it can easily be cross compiled to all major operating systems
+
+## TODO
+* Code Cleanup
+  * Game Jams lead to lots of messy code, such as copy paste ugliness
+* Improved AI
+  * Due to limitations in time for the jam the AI isn't the most advanced
+  * I had started work on more advanced features I would like to continue
+* Better Online Support
+  * Currently the online is mostly centered on ad hoc play with direct IP connections
+  * Would like to add better server implementations where the server is the authority
+* Possible character backgrounds of why all these random monsters are playing this game!
+* Potentially add more board games to the mix (this might be a new project though)
   
 ## That's great, but I just want to play it!
 OK, I hear you, compiling games isn't nearly as fun as playing them!
