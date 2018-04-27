@@ -1,13 +1,10 @@
 package isledef
 
 import (
-	"log"
-	"strings"
+	"time"
 
+	assets "github.com/atolVerderben/spaloosh/isledef/internal"
 	"github.com/hajimehoshi/ebiten/audio"
-	"github.com/hajimehoshi/ebiten/audio/vorbis"
-	"github.com/hajimehoshi/ebiten/audio/wav"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
 var (
@@ -18,6 +15,16 @@ var (
 	}
 	soundPlayers = map[string]*audio.Player{}
 )
+
+type SoundPlayer struct {
+	audioContext *audio.Context
+	audioPlayer  *audio.Player
+	current      time.Duration
+	total        time.Duration
+	seBytes      []byte
+	seCh         chan []byte
+	volume128    int
+}
 
 func init() {
 	const sampleRate = 44100
@@ -45,11 +52,11 @@ func (e *emptyAudio) Close() error {
 }
 
 func loadAudio() error {
-	for _, n := range soundFilenames {
+	/*for _, n := range soundFilenames {
 		/*b, err := assets.Asset("resources/sound/" + n)
 		if err != nil {
 			return err
-		}*/
+		}
 
 		oggF, err := ebitenutil.OpenFile("assets/audio/" + n)
 		if err != nil {
@@ -87,7 +94,7 @@ func loadAudio() error {
 
 		soundPlayers[n] = p
 
-	}
+	}*/
 	return nil
 }
 
@@ -152,11 +159,11 @@ func PlayBGM(bgm BGM) error {
 type SE string
 
 const (
-	seMiss SE = "spaloosh.wav"
-	seHit     = "kaboom-ah2.wav"
+	seMiss string = "spaloosh.wav"
+	seHit         = "kaboom-ah2.wav"
 )
 
-func PlaySE(se SE) error {
+func PlaySE(se string) error {
 	if !PlaySoundEffects {
 		return nil
 	}
@@ -164,13 +171,10 @@ func PlaySE(se SE) error {
 		return nil
 	}
 
-	p := soundPlayers[string(se)]
-	p.SetVolume(0.05)
-	if err := p.Rewind(); err != nil {
-		return err
-	}
+	sePlayer, _ := audio.NewPlayerFromBytes(audioContext, assets.ReturnSE(se))
+	sePlayer.SetVolume(0.05)
 
-	if err := p.Play(); err != nil {
+	if err := sePlayer.Play(); err != nil {
 		return err
 	}
 	return nil
