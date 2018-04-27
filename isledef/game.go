@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"time"
 
+	assets "github.com/atolVerderben/spaloosh/isledef/internal"
 	"github.com/atolVerderben/tentsuyu"
 	"github.com/golang/freetype/truetype"
 	"github.com/hajimehoshi/ebiten"
@@ -142,21 +143,15 @@ func (g *Game) loadImages() error {
 	mono, _ := truetype.Parse(gomono.TTF)
 	tentsuyu.Components.UIController.AddFontFile(FntGoMono, mono)
 	//tentsuyu.Components.UIController.AddFontFile("font1", tt)
-	tentsuyu.Components.UIController.AddFont(FntSmallPixel, "assets/font/small_pixel.ttf")
+	//tentsuyu.Components.UIController.AddFont(FntSmallPixel, "assets/font/small_pixel.ttf")
+	tentsuyu.Components.UIController.AddFontFile(FntSmallPixel, assets.ReturnPixelFont())
 
-	/*tentsuyu.ImageManager.LoadImageFromFile(string(ShipTypeBattleShip), "assets/bake-kujira.png")
-	tentsuyu.ImageManager.LoadImageFromFile(string(ShipTypeCruiser), "assets/Kraken.png")
-	tentsuyu.ImageManager.LoadImageFromFile(string(ShipTypePatrol), "assets/umibozu-horiz.png") //TODO: adjust this to use normal png file
-	tentsuyu.ImageManager.LoadImageFromFile("grid", "assets/GRID.png")
-	tentsuyu.ImageManager.LoadImageFromFile("explosion", "assets/explosion.png")
-	tentsuyu.ImageManager.LoadImageFromFile("bullet", "assets/bomb.png")
-	tentsuyu.ImageManager.LoadImageFromFile("girl", "assets/nure-onna.png")
-	tentsuyu.ImageManager.LoadImageFromFile("nure-lose", "assets/nure-onna-lose.png")
-	tentsuyu.ImageManager.LoadImageFromFile("nure-win", "assets/nure-onna-win.png")
-	tentsuyu.ImageManager.LoadImageFromFile("BG", "assets/shoreline.png")
-	tentsuyu.ImageManager.LoadImageFromFile("title", "assets/spalooshfolio.png")
-	tentsuyu.ImageManager.LoadImageFromFile("spaloosh", "assets/spaloosh3.png")*/
-	tentsuyu.ImageManager.LoadImageFromFile("spaloosh-sheet", "assets/spaloosh-sheet.png")
+	//tentsuyu.ImageManager.LoadImageFromFile("spaloosh-sheet", "assets/spaloosh-sheet.png")
+	sImg, err := assets.LoadSpalooshSheet()
+	if err != nil {
+		log.Fatal(err)
+	}
+	tentsuyu.ImageManager.AddImage("spaloosh-sheet", sImg)
 
 	drawImage, err := ebiten.NewImage(64, 64, ebiten.FilterNearest)
 	if err != nil {
@@ -174,7 +169,7 @@ func (g *Game) loadImages() error {
 	textImg.Fill(color.RGBA{R: 238, G: 252, B: 255, A: 255})
 	tentsuyu.ImageManager.AddImage("textBubble", textImg)
 
-	SpalooshSheet = ReadSpriteSheet("assets/spaloosh-sheet.json")
+	SpalooshSheet = ReadSpriteSheetJSON(assets.LoadSpriteSheetJSON()) //ReadSpriteSheet("assets/spaloosh-sheet.json")
 
 	//ebiten.SetFullscreen(true)
 	return nil

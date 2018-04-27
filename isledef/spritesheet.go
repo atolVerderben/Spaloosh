@@ -35,3 +35,9 @@ func ReadSpriteSheet(filename string) *SpriteSheet {
 	json.Unmarshal(raw, m)
 	return m
 }
+
+func ReadSpriteSheetJSON(jsonByte []byte) *SpriteSheet {
+	m := &SpriteSheet{}
+	json.Unmarshal(jsonByte, m)
+	return m
+}

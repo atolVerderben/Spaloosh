@@ -47,6 +47,7 @@ func NewGameData(gameMode GameMode) *GameData {
 	return g
 }
 
+//SetGameMode sets the game mode chosen by the character. In this case used for Timed mode to set number of bombs
 func (g *GameData) SetGameMode(gameMode GameMode) {
 	switch gameMode {
 	case GameModeNormalTimed:
