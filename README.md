@@ -1,5 +1,8 @@
 # Spaloosh!
+[Play now on itch.io](https://atolverderben.itch.io/spaloosh)
 ![Spaloosh Title Screen](screenshots/title.png "Spaloosh! Title Screen")
+
+
 ## About
 Spaloosh is a take on the traditional battleship game using a monster theme instead of battleships. Originally created for the [Maximum Monster Month](https://itch.io/jam/maximum-monster-month) game jam on [itch.io](https://itch.io). It is written in Go using [Ebiten](https://github.com/hajimehoshi/ebiten) for a 2D framework. All "artwork" was drawn by myself. The idea was to challenge myself to make a "full" game from scratch all by myself, that included using no established game engines.
 
@@ -25,12 +28,6 @@ Spaloosh is a take on the traditional battleship game using a monster theme inst
   * Would like to add better server implementations where the server is the authority
 * Possible character backgrounds of why all these random monsters are playing this game!
 * Potentially add more board games to the mix (this might be a new project though)
-  
-## That's great, but I just want to play it!
-OK, I hear you, compiling games isn't nearly as fun as playing them!
-
-
-The game can be downloaded from itch.io here: [Spaloosh!](https://atolverderben.itch.io/spaloosh)
 
 
 <br/>
