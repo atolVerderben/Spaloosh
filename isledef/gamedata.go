@@ -1,13 +1,17 @@
 package isledef
 
-import "time"
+import (
+	"time"
+
+	"github.com/atolVerderben/tentsuyu"
+)
 
 //GameMode represents the difficulty/mode of the game
 type GameMode int
 
 //Currently available game modes
 const (
-	GameModeNormalTimed GameMode = iota
+	GameModeNormalTimed int = iota
 	GameModeHardcoreTimed
 	GameModeNormalBattle
 	GameModeOnlineHost
@@ -29,52 +33,69 @@ type GameData struct {
 	joinedRoom                         string
 }
 
-//NewGameData creates a new GameData to keep track of the game
-func NewGameData(gameMode GameMode) *GameData {
-	g := &GameData{
-		currentScale: 1,
-		startTime:    time.Now(),
-		server:       "127.0.0.1",
-		port:         "5555",
+func InitGameData(g *tentsuyu.GameData, gameMode int) {
+	g.Settings["Server"] = &tentsuyu.GameValuePair{
+		Name:      "Server",
+		ValueType: tentsuyu.GameValueText,
+		ValueText: "127.0.0.1",
 	}
+	g.Settings["Port"] = &tentsuyu.GameValuePair{
+		Name:      "Port",
+		ValueType: tentsuyu.GameValueText,
+		ValueText: "5555",
+	}
+	g.Settings["Scale"] = &tentsuyu.GameValuePair{
+		Name:      "Scale",
+		ValueType: tentsuyu.GameValueInt,
+		ValueInt:  1,
+	}
+	g.Settings["PlayerCharacer"] = &tentsuyu.GameValuePair{
+		Name:      "Player Character",
+		ValueType: tentsuyu.GameValueText,
+		ValueText: "",
+	}
+
+	g.Settings["OpponentCharacter"] = &tentsuyu.GameValuePair{
+		Name:      "Opponent Character",
+		ValueType: tentsuyu.GameValueText,
+		ValueText: "",
+	}
+	g.Settings["JoinedRoom"] = &tentsuyu.GameValuePair{
+		Name:      "Joined Room",
+		ValueType: tentsuyu.GameValueText,
+		ValueText: "",
+	}
+
+	g.Settings["GameMode"] = &tentsuyu.GameValuePair{
+		Name:      "Game Mode",
+		ValueType: tentsuyu.GameValueInt,
+		ValueInt:  gameMode,
+	}
+
 	switch gameMode {
 	case GameModeNormalTimed:
-		g.shotMax = 24
+		g.Settings["ShotMax"] = &tentsuyu.GameValuePair{
+			Name:      "ShotMax",
+			ValueType: tentsuyu.GameValueInt,
+			ValueInt:  24,
+		}
 	case GameModeHardcoreTimed:
-		g.shotMax = 15
+		g.Settings["ShotMax"] = &tentsuyu.GameValuePair{
+			Name:      "ShotMax",
+			ValueType: tentsuyu.GameValueInt,
+			ValueInt:  15,
+		}
 
 	}
-	return g
 }
 
 //SetGameMode sets the game mode chosen by the character. In this case used for Timed mode to set number of bombs
-func (g *GameData) SetGameMode(gameMode GameMode) {
+func SetGameMode(g *tentsuyu.GameData, gameMode int) {
 	switch gameMode {
 	case GameModeNormalTimed:
-		g.shotMax = 24
+		g.Settings["ShotMax"].ValueInt = 24
 	case GameModeHardcoreTimed:
-		g.shotMax = 15
+		g.Settings["ShotMax"].ValueInt = 15
 	}
-	g.gameMode = gameMode
-}
-
-//Update the game time
-func (g *GameData) Update() {
-	g.time++
-}
-
-//TimeInSecond returns the current time in seconds
-func (g *GameData) TimeInSecond() int {
-
-	return int(time.Now().Sub(g.startTime).Seconds())
-
-	//return g.time / 60
-}
-
-//TimeInMilliseconds returns the current time in seconds
-func (g *GameData) TimeInMilliseconds() int64 {
-
-	return time.Now().Sub(g.startTime).Nanoseconds() / int64(time.Millisecond)
-
-	//return g.time / 60
+	g.Settings["GameMode"].ValueInt = gameMode
 }

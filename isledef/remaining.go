@@ -24,10 +24,10 @@ func NewEnemyDisplay(x, y float64, smallGrid bool) *EnemyDisplay {
 		x:           x,
 		y:           y,
 		smallGrid:   smallGrid,
-		umibozuText: tentsuyu.NewTextElementStationary(x, y+73, 100, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Umibozu"}, color.Black, 12),
-		krakenText:  tentsuyu.NewTextElementStationary(x, y+193, 100, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Kraken"}, color.Black, 12),
-		bakeText:    tentsuyu.NewTextElementStationary(x, y+255, 100, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Bake-Kujira"}, color.Black, 12),
-		mishiText:   tentsuyu.NewTextElementStationary(x, y+131, 100, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Mishipeshu"}, color.Black, 12),
+		umibozuText: tentsuyu.NewTextElementStationary(x, y+73, 100, 50, Game.UIController.ReturnFont(FntSmallPixel), []string{"Umibozu"}, color.Black, 12),
+		krakenText:  tentsuyu.NewTextElementStationary(x, y+193, 100, 50, Game.UIController.ReturnFont(FntSmallPixel), []string{"Kraken"}, color.Black, 12),
+		bakeText:    tentsuyu.NewTextElementStationary(x, y+255, 100, 50, Game.UIController.ReturnFont(FntSmallPixel), []string{"Bake-Kujira"}, color.Black, 12),
+		mishiText:   tentsuyu.NewTextElementStationary(x, y+131, 100, 50, Game.UIController.ReturnFont(FntSmallPixel), []string{"Mishipeshu"}, color.Black, 12),
 	}
 	if smallGrid {
 		ed.krakenText.SetPosition(x, y+131)
@@ -68,7 +68,7 @@ func (ed *EnemyDisplay) Draw(screen *ebiten.Image) error {
 	if ed.umibozuDefeated {
 		op.ColorM.Scale(0, 0, 0, 1)
 	}
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 	yOffset := 96.0
@@ -84,7 +84,7 @@ func (ed *EnemyDisplay) Draw(screen *ebiten.Image) error {
 		if ed.mishiDefeated {
 			op.ColorM.Scale(0, 0, 0, 1)
 		}
-		if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+		if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 			return err
 		}
 		yOffset += 64
@@ -100,7 +100,7 @@ func (ed *EnemyDisplay) Draw(screen *ebiten.Image) error {
 	if ed.krakenDefeated {
 		op.ColorM.Scale(0, 0, 0, 1)
 	}
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 	yOffset += 64
@@ -115,7 +115,7 @@ func (ed *EnemyDisplay) Draw(screen *ebiten.Image) error {
 	if ed.bakeDefeated {
 		op.ColorM.Scale(0, 0, 0, 1)
 	}
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 

@@ -11,7 +11,7 @@ type BulletCounter struct {
 	bulletPerRow     int
 }
 
-func NewBulletCounter(x, y float64, gd *GameData) *BulletCounter {
+func NewBulletCounter(x, y float64, gd *tentsuyu.GameData) *BulletCounter {
 	bc := &BulletCounter{
 		BasicObject: &tentsuyu.BasicObject{
 			X:      x,
@@ -25,9 +25,9 @@ func NewBulletCounter(x, y float64, gd *GameData) *BulletCounter {
 			Width:  32,
 			Height: 32,
 		},
-		bullets:          make([]bool, gd.shotMax),
+		bullets:          make([]bool, gd.Settings["ShotMax"].ValueInt),
 		bulletPerRow:     4,
-		remainingBullets: gd.shotMax,
+		remainingBullets: gd.Settings["ShotMax"].ValueInt,
 	}
 	for i := range bc.bullets {
 		bc.bullets[i] = true
@@ -97,7 +97,7 @@ func (bc *BulletCounter) Draw(screen *ebiten.Image) error {
 			op.GeoM.Scale(ZoomLevel, ZoomLevel)
 			op.GeoM.Translate(bc.X+bX, bc.Y+bY)
 
-			if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+			if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 				return err
 			}
 		}

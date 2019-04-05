@@ -8,21 +8,19 @@ import (
 
 	assets "github.com/atolVerderben/spaloosh/isledef/internal"
 	"github.com/atolVerderben/tentsuyu"
-	"github.com/golang/freetype/truetype"
 	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
-	"golang.org/x/image/font/gofont/gomono"
-	"golang.org/x/image/font/gofont/goregular"
 )
 
 var (
 	//ZoomLevel is the overall zoom of the game for ease of use
-	ZoomLevel        float64
-	SpalooshSheet    *SpriteSheet
-	PlaySoundEffects = true
-	AIBroke          = false
-	TimeRanOut       = false
-	rightAngle       = 1.5708
+	ZoomLevel                 float64
+	SpalooshSheet             *SpriteSheet
+	AIBroke                   = false
+	TimeRanOut                = false
+	rightAngle                = 1.5708
+	Game                      *tentsuyu.Game
+	ScreenWidth, ScreenHeight float64
+	GamePlayer                *Player
 )
 
 const (
@@ -52,76 +50,106 @@ const (
 	frameVamp
 )
 
-//Game represents the game itself
-type Game struct {
-	imageLoadedCh    chan error
-	audioLoadedCh    chan error
-	gameState        GameState
-	pausedState      GameState
-	gameData         *GameData
-	img              map[string]*ebiten.Image
-	orientation      int
-	screen           *ebiten.Image
-	player           *Player
-	background       *backgroundImageParts
-	mainState        GameState
-	toggleScreenText *tentsuyu.TextElement
-}
-
 //NewGame begins a new game of spaloosh!
-func NewGame(w, h int) (game *Game, err error) {
+func NewGame(w, h float64) (game *tentsuyu.Game, err error) {
 	rand.Seed(time.Now().UnixNano())
-	defer func() {
-		if ferr := finalizeAudio(); ferr != nil && err == nil {
-			err = ferr
-		}
-		if err != nil {
-			game = nil
-		}
-	}()
-	game = &Game{
-		img:           map[string]*ebiten.Image{},
-		imageLoadedCh: make(chan error),
-		audioLoadedCh: make(chan error),
-		gameData:      NewGameData(GameModeNormalTimed),
-	}
+	ScreenWidth, ScreenHeight = w, h
+
+	game, _ = tentsuyu.NewGame(w, h)
 	ebiten.SetRunnableInBackground(true) //The timer gets messed up if this isn't enabled
 
-	tentsuyu.BootUp(float64(w), float64(h))
+	game.Input.RegisterButton("Forward", ebiten.KeyW, ebiten.KeyUp)
+	game.Input.RegisterButton("Up", ebiten.KeyW, ebiten.KeyUp)
+	game.Input.RegisterButton("Down", ebiten.KeyS, ebiten.KeyDown)
+	game.Input.RegisterButton("Backward", ebiten.KeyS, ebiten.KeyDown)
+	game.Input.RegisterButton("Left", ebiten.KeyA, ebiten.KeyLeft)
+	game.Input.RegisterButton("Right", ebiten.KeyD, ebiten.KeyRight)
+	game.Input.RegisterButton("Escape", ebiten.KeyEscape)
+	game.Input.RegisterButton("ToggleFullscreen", ebiten.KeyF11, ebiten.KeyF)
+	game.Input.RegisterButton("ChangeScreenScale", ebiten.KeyF10)
+	game.Input.RegisterButton("ToggleSound", ebiten.KeyF9, ebiten.KeyM)
+	game.Input.RegisterButton("RotateRight", ebiten.KeyRight)
+	game.Input.RegisterButton("RotateLeft", ebiten.KeyLeft)
 
-	//GameWorldManager = CreateWorldManager()
-	go func() {
-		if err := game.loadImages(); err != nil {
-			game.imageLoadedCh <- err
-		}
-		close(game.imageLoadedCh)
-	}()
-	go func() {
-		if err := loadAudio(); err != nil {
-			game.audioLoadedCh <- err
-		}
-		close(game.audioLoadedCh)
-	}()
+	game.UIController.AddFont(FntSmallPixel, assets.ReturnPixelFont())
+	game.LoadImages(func() *tentsuyu.ImageManager {
+		return loadImages()
+	})
+	game.LoadAudio(func() *tentsuyu.AudioPlayer {
+		return loadAudio()
+	})
 
-	tentsuyu.Input.RegisterButton("Forward", ebiten.KeyW, ebiten.KeyUp)
-	tentsuyu.Input.RegisterButton("Up", ebiten.KeyW, ebiten.KeyUp)
-	tentsuyu.Input.RegisterButton("Down", ebiten.KeyS, ebiten.KeyDown)
-	tentsuyu.Input.RegisterButton("Backward", ebiten.KeyS, ebiten.KeyDown)
-	tentsuyu.Input.RegisterButton("Left", ebiten.KeyA, ebiten.KeyLeft)
-	tentsuyu.Input.RegisterButton("Right", ebiten.KeyD, ebiten.KeyRight)
-	tentsuyu.Input.RegisterButton("Escape", ebiten.KeyEscape)
-	tentsuyu.Input.RegisterButton("ToggleFullscreen", ebiten.KeyF11, ebiten.KeyF)
-	tentsuyu.Input.RegisterButton("ChangeScreenScale", ebiten.KeyF10)
-	tentsuyu.Input.RegisterButton("ToggleSound", ebiten.KeyF9, ebiten.KeyM)
-	tentsuyu.Input.RegisterButton("RotateRight", ebiten.KeyRight)
-	tentsuyu.Input.RegisterButton("RotateLeft", ebiten.KeyLeft)
+	game.SetGameStateLoop(func() error {
+		switch game.GetGameState().Msg() {
+		case GameStateMsgReqTitle:
+			game.SetGameState(CreateTitleMain())
+		case GameStateMsgReqMainMenu:
+			game.SetGameState(CreateMainMenu(game))
+		case GameStateMsgReqMain:
+			game.SetGameState(NewGameMain(game))
+		case GameStateMsgReqBattle:
+			game.SetGameState(NewGameBattle(game))
+		case GameStateMsgReqBattleCharacterSelect:
+			game.SetGameState(CreateBattleCharSelect(game))
+		case GameStateMsgReqMPMainMenu:
+			game.SetGameState(CreateMPMainMenu(game))
+		case GameStateMsgReqSetIP:
+			game.SetGameState(CreateMPSetIP(game))
+		case GameStateMsgReqMPHelp:
+			game.SetGameState(CreateMPHelp(game))
+		case GameStateMsgReqMPStage:
+			game.SetGameState(CreateMPStage(game))
+		case GameStateMsgReqMPMain:
+			game.SetGameState(NewMPBattle(game))
+		case GameStateMsgReqHostingRooms:
+			game.SetGameState(CreateMPRooms(game))
+		case GameStateGameOver:
+			game.SetPauseState(CreateGameOver(game, false))
+		case GameStateGameWin:
+			game.SetPauseState(CreateGameOver(game, true))
+		case GameStateMsgReqMPGameOverLose:
+			game.SetPauseState(CreateMPGameOver(game, false))
+		case GameStateMsgReqMPGameOverWin:
+			game.SetPauseState(CreateMPGameOver(game, true))
+		case GameStateMsgPause:
+			game.SetPauseState(CreatePaused())
+		case GameStateMsgUnPause:
+			game.UnPause()
+		case GameStateMsgReqLostConnection:
+			game.SetPauseState(CreateLostConnection())
+		case tentsuyu.GameStateMsgNotStarted:
+			game.SetGameState(CreateTitleMain())
+		}
+
+		if game.Input.Button("ToggleSound").JustPressed() {
+			ToggleSound()
+		}
+		if game.Input.Button("ChangeScreenScale").JustPressed() {
+			switch game.GameData.Settings["Scale"].ValueInt {
+			case 1:
+				game.GameData.Settings["Scale"].ValueInt = 2
+				ebiten.SetScreenScale(2)
+			case 2:
+				game.GameData.Settings["Scale"].ValueInt = 1
+				ebiten.SetScreenScale(1)
+			case 3:
+				game.GameData.Settings["Scale"].ValueInt = 1
+				ebiten.SetScreenScale(1)
+			}
+		}
+
+		return nil
+	})
+	InitGameData(game.GameData, GameModeNormalTimed)
 	//ZoomLevel = 3.0
-	game.player = CreatePlayer(game)
+	GamePlayer = CreatePlayer(game)
+
+	Game = game
 
 	return
 }
 
-func (g *Game) DrawBackground() error {
+func DrawBackground(game *tentsuyu.Game) error {
 	op := &ebiten.DrawImageOptions{}
 	op.ImageParts = &tentsuyu.BasicImageParts{
 		Sx:     SpalooshSheet.Frames[frameBackground].Frame["x"],
@@ -130,54 +158,45 @@ func (g *Game) DrawBackground() error {
 		Height: SpalooshSheet.Frames[frameBackground].Frame["h"],
 	}
 
-	if err := g.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g *Game) loadImages() error {
-
-	font, _ := truetype.Parse(goregular.TTF)
-	tentsuyu.Components.UIController.AddFontFile(FntGoRegular, font)
-	mono, _ := truetype.Parse(gomono.TTF)
-	tentsuyu.Components.UIController.AddFontFile(FntGoMono, mono)
-	//tentsuyu.Components.UIController.AddFontFile("font1", tt)
-	//tentsuyu.Components.UIController.AddFont(FntSmallPixel, "assets/font/small_pixel.ttf")
-	tentsuyu.Components.UIController.AddFontFile(FntSmallPixel, assets.ReturnPixelFont())
+func loadImages() *tentsuyu.ImageManager {
+	imageManager := tentsuyu.NewImageManager()
 
 	//tentsuyu.ImageManager.LoadImageFromFile("spaloosh-sheet", "assets/spaloosh-sheet.png")
 	sImg, err := assets.LoadSpalooshSheet()
 	if err != nil {
 		log.Fatal(err)
 	}
-	tentsuyu.ImageManager.AddImage("spaloosh-sheet", sImg)
+	imageManager.AddImage("spaloosh-sheet", sImg)
 
 	drawImage, err := ebiten.NewImage(64, 64, ebiten.FilterNearest)
 	if err != nil {
 		log.Fatal(err)
 	}
 	drawImage.Fill(color.RGBA{R: 0, G: 0, B: 252, A: 255})
-	tentsuyu.ImageManager.AddImage("blue", drawImage)
-	g.background = &backgroundImageParts{image: tentsuyu.ImageManager.ReturnImage("blue"), count: 20}
-	g.background.SetSize(1600, 1600)
+	imageManager.AddImage("blue", drawImage)
 
 	textImg, err := ebiten.NewImage(1, 1, ebiten.FilterNearest)
 	if err != nil {
 		log.Fatal(err)
 	}
 	textImg.Fill(color.RGBA{R: 238, G: 252, B: 255, A: 255})
-	tentsuyu.ImageManager.AddImage("textBubble", textImg)
+	imageManager.AddImage("textBubble", textImg)
 
 	SpalooshSheet = ReadSpriteSheetJSON(assets.LoadSpriteSheetJSON()) //ReadSpriteSheet("assets/spaloosh-sheet.json")
 
 	//ebiten.SetFullscreen(true)
-	return nil
+	return imageManager
 
 }
 
 //ToggleFullscreen toggles the game in or out of full screen
-func (g *Game) ToggleFullscreen() {
+func ToggleFullscreen() {
 	if ebiten.IsFullscreen() {
 		ebiten.SetFullscreen(false)
 	} else {
@@ -185,134 +204,9 @@ func (g *Game) ToggleFullscreen() {
 	}
 }
 
-func (g *Game) ToggleSound() {
-	PlaySoundEffects = !PlaySoundEffects
-}
-
-//Loop controls everything that goes on in the game
-func (g *Game) Loop(screen *ebiten.Image) error {
-	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
-		select {
-		case err := <-g.imageLoadedCh:
-			if err != nil {
-				return err
-			}
-			g.imageLoadedCh = nil
-		case err := <-g.audioLoadedCh:
-			if err != nil {
-				return err
-			}
-			g.audioLoadedCh = nil
-		default:
-		}
-	}
-	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
-		return ebitenutil.DebugPrint(screen, "Now Loading...")
-	}
-	if g.toggleScreenText == nil {
-		g.toggleScreenText = tentsuyu.NewTextElementStationary(742, 0, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel),
-			[]string{"F11: Toggle Fullscreen", "F9: Mute Sound Effects"}, color.White, 8)
-	}
-
-	/*if err := audioContext.Update(); err != nil {
-		return err
-	}*/
-
-	tentsuyu.Input.Update()
-	g.screen = screen
-
-	if g.gameState == nil {
-		//g.mainState = NewGameMain(g)
-		g.gameState = CreateTitleMain() //g.mainState
-	} else {
-		switch g.gameState.Msg() {
-		case GameStateMsgReqTitle:
-			g.gameState = CreateTitleMain()
-		case GameStateMsgReqMainMenu:
-			g.gameState = CreateMainMenu(g)
-		case GameStateMsgReqMain:
-			g.mainState = NewGameMain(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqBattle:
-			g.mainState = NewGameBattle(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqBattleCharacterSelect:
-			g.mainState = CreateBattleCharSelect(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqMPMainMenu:
-			g.mainState = CreateMPMainMenu(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqSetIP:
-			g.mainState = CreateMPSetIP(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqMPHelp:
-			g.mainState = CreateMPHelp(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqMPStage:
-			g.mainState = CreateMPStage(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqMPMain:
-			g.mainState = NewMPBattle(g)
-			g.gameState = g.mainState
-		case GameStateMsgReqHostingRooms:
-			g.mainState = CreateMPRooms(g)
-			g.gameState = g.mainState
-		case GameStateGameOver:
-			g.pausedState = g.gameState
-			g.gameState = CreateGameOver(g, false)
-		case GameStateGameWin:
-			g.pausedState = g.gameState
-			g.gameState = CreateGameOver(g, true)
-		case GameStateMsgReqMPGameOverLose:
-			g.pausedState = g.gameState
-			g.gameState = CreateMPGameOver(g, false)
-		case GameStateMsgReqMPGameOverWin:
-			g.pausedState = g.gameState
-			g.gameState = CreateMPGameOver(g, true)
-		case GameStateMsgPause:
-			g.pausedState = g.gameState
-			g.gameState = CreatePaused()
-		case GameStateMsgUnPause:
-			g.gameState = g.pausedState
-			g.gameState.SetMsg(GameStateMsgNone)
-		case GameStateMsgReqLostConnection:
-			g.pausedState = g.gameState
-			g.gameState = CreateLostConnection()
-		}
-	}
-	if g.gameState != nil {
-		g.gameState.Update(g)
-	}
-	if !ebiten.IsRunningSlowly() {
-		if err := g.gameState.Draw(g); err != nil {
-			return err
-		}
-		g.toggleScreenText.Draw(g.screen)
-	}
-	g.gameData.Update()
-
-	if tentsuyu.Input.Button("ToggleFullscreen").JustPressed() {
-		g.ToggleFullscreen()
-	}
-	if tentsuyu.Input.Button("ToggleSound").JustPressed() {
-		g.ToggleSound()
-	}
-	if tentsuyu.Input.Button("ChangeScreenScale").JustPressed() {
-		switch g.gameData.currentScale {
-		case 1:
-			g.gameData.currentScale = 2
-			ebiten.SetScreenScale(2)
-		case 2:
-			g.gameData.currentScale = 1
-			ebiten.SetScreenScale(1)
-		case 3:
-			g.gameData.currentScale = 1
-			ebiten.SetScreenScale(1)
-		}
-	}
-
-	return nil
-	//return ebitenutil.DebugPrint(screen, fmt.Sprintf("\nFPS: %.2f", ebiten.CurrentFPS()))
+//ToggleSound turns the sound on and off
+func ToggleSound() {
+	Game.AudioPlayer.MuteAll(true)
 }
 
 //All possible fonts

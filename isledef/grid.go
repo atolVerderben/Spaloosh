@@ -138,7 +138,7 @@ func (g *Grid) drawShips(screen *ebiten.Image) error {
 				if s.visible {
 					op.ColorM.Scale(1, 1, 1, 0.5)
 				}
-				if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+				if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 					return err
 				}
 			}
@@ -158,7 +158,7 @@ func (g *Grid) Draw(screen *ebiten.Image) error {
 	//op.ColorM.Scale(0, 0, 0, 1)
 	//tentsuyu.ApplyCameraTransform(op, true)
 
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -197,7 +197,7 @@ func (g *Grid) Draw(screen *ebiten.Image) error {
 				op.GeoM.Scale(ZoomLevel, ZoomLevel)
 				op.GeoM.Translate(g.ReturnXYCoords(i, j))
 
-				if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+				if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 					return err
 				}
 				//I might come back to this at a later date
@@ -219,18 +219,18 @@ func (g *Grid) Draw(screen *ebiten.Image) error {
 }
 
 //Update the grid
-func (g *Grid) Update(game *Game) bool {
+func (g *Grid) Update(game *tentsuyu.Game) bool {
 	shotHit := false
-	if tentsuyu.Input.LeftClick().JustReleased() && g.playable {
-		x, y := tentsuyu.Input.GetMouseCoords()
+	if game.Input.LeftClick().JustReleased() && g.playable {
+		x, y := game.Input.GetMouseCoords()
 		//fmt.Printf("Mouse X: %v Mouse Y: %v\n", x-g.X, y-g.Y)
 		if g.Contains(x, y) {
 			tile, row, col := g.DetermineTile(x-g.X, y-g.Y)
 			switch tile {
 			case TileEmpty:
-				if game.player.TakeShot() {
+				if GamePlayer.TakeShot() {
 					shotHit = true
-					switch gs := game.gameState.(type) {
+					switch gs := game.GetGameState().(type) {
 					case *GameMain:
 						gs.bulletCounter.Fire()
 					}
@@ -238,7 +238,7 @@ func (g *Grid) Update(game *Game) bool {
 					g.area[row][col] = TileEmptyShot
 					g.animateArea[row][col] = 1
 					g.prevHit = false
-					if err := PlaySE(seMiss); err != nil {
+					if err := Game.AudioPlayer.PlaySE(seMiss); err != nil {
 						log.Printf("Error: %v\n", err)
 						//panic(err)
 					}
@@ -247,15 +247,15 @@ func (g *Grid) Update(game *Game) bool {
 			case TileOccupied:
 				for i := 0; i < len(g.Ships); i++ {
 					if g.Ships[i].Contains(x, y) && g.Ships[i].dead == false {
-						if game.player.TakeShot() {
+						if GamePlayer.TakeShot() {
 							shotHit = true
-							switch gs := game.gameState.(type) {
+							switch gs := game.GetGameState().(type) {
 							case *GameMain:
 								gs.bulletCounter.Fire()
 							}
 							g.Ships[i].Hit(row, col)
 							g.prevHit = true
-							if err := PlaySE(seHit); err != nil {
+							if err := Game.AudioPlayer.PlaySE(seHit); err != nil {
 								log.Printf("Error: %v\n", err)
 								//panic(err)
 							}
@@ -283,18 +283,18 @@ func (g *Grid) Update(game *Game) bool {
 }
 
 //SpecialAttack is unique to each game character
-func (g *Grid) SpecialAttack(game *Game) bool {
+func (g *Grid) SpecialAttack(game *tentsuyu.Game) bool {
 	shotHit := false
-	if tentsuyu.Input.LeftClick().JustReleased() && g.playable {
-		x, y := tentsuyu.Input.GetMouseCoords()
+	if game.Input.LeftClick().JustReleased() && g.playable {
+		x, y := game.Input.GetMouseCoords()
 		//fmt.Printf("Mouse X: %v Mouse Y: %v\n", x-g.X, y-g.Y)
 		if g.Contains(x, y) {
 			tile, row, col := g.DetermineTile(x-g.X, y-g.Y)
 			switch tile {
 			case TileEmpty:
-				if game.player.TakeShot() {
+				if GamePlayer.TakeShot() {
 					shotHit = true
-					switch gs := game.gameState.(type) {
+					switch gs := game.GetGameState().(type) {
 					case *GameMain:
 						gs.bulletCounter.Fire()
 					}
@@ -302,7 +302,7 @@ func (g *Grid) SpecialAttack(game *Game) bool {
 					g.area[row][col] = TileEmptyShot
 					g.animateArea[row][col] = 1
 
-					if err := PlaySE(seMiss); err != nil {
+					if err := Game.AudioPlayer.PlaySE(seMiss); err != nil {
 						log.Printf("Error: %v\n", err)
 						//panic(err)
 					}
@@ -311,14 +311,14 @@ func (g *Grid) SpecialAttack(game *Game) bool {
 			case TileOccupied:
 				for i := 0; i < len(g.Ships); i++ {
 					if g.Ships[i].Contains(x, y) && g.Ships[i].dead == false {
-						if game.player.TakeShot() {
+						if GamePlayer.TakeShot() {
 							shotHit = true
-							switch gs := game.gameState.(type) {
+							switch gs := game.GetGameState().(type) {
 							case *GameMain:
 								gs.bulletCounter.Fire()
 							}
 							g.Ships[i].Hit(row, col)
-							if err := PlaySE(seHit); err != nil {
+							if err := Game.AudioPlayer.PlaySE(seHit); err != nil {
 								log.Printf("Error: %v\n", err)
 								//panic(err)
 							}
@@ -346,19 +346,19 @@ func (g *Grid) SpecialAttack(game *Game) bool {
 }
 
 //Update the grid
-func (g *Grid) MPUpdate(game *Game) (bool, int, int) {
+func (g *Grid) MPUpdate(game *tentsuyu.Game) (bool, int, int) {
 	shotHit := false
 	returnRow, returnCol := 0, 0
-	if tentsuyu.Input.LeftClick().JustReleased() && g.playable {
-		x, y := tentsuyu.Input.GetMouseCoords()
+	if game.Input.LeftClick().JustReleased() && g.playable {
+		x, y := game.Input.GetMouseCoords()
 		//fmt.Printf("Mouse X: %v Mouse Y: %v\n", x-g.X, y-g.Y)
 		if g.Contains(x, y) {
 			tile, row, col := g.DetermineTile(x-g.X, y-g.Y)
 			switch tile {
 			case TileEmpty:
-				if game.player.TakeShot() {
+				if GamePlayer.TakeShot() {
 					shotHit = true
-					switch gs := game.gameState.(type) {
+					switch gs := game.GetGameState().(type) {
 					case *GameMain:
 						gs.bulletCounter.Fire()
 					}
@@ -369,7 +369,7 @@ func (g *Grid) MPUpdate(game *Game) (bool, int, int) {
 					returnRow = row
 					returnCol = col
 
-					if err := PlaySE(seMiss); err != nil {
+					if err := Game.AudioPlayer.PlaySE(seMiss); err != nil {
 						log.Printf("Error: %v\n", err)
 						//panic(err)
 					}
@@ -378,14 +378,14 @@ func (g *Grid) MPUpdate(game *Game) (bool, int, int) {
 			case TileOccupied:
 				for i := 0; i < len(g.Ships); i++ {
 					if g.Ships[i].Contains(x, y) && g.Ships[i].dead == false {
-						if game.player.TakeShot() {
+						if GamePlayer.TakeShot() {
 							shotHit = true
-							switch gs := game.gameState.(type) {
+							switch gs := game.GetGameState().(type) {
 							case *GameMain:
 								gs.bulletCounter.Fire()
 							}
 							g.Ships[i].Hit(row, col)
-							if err := PlaySE(seHit); err != nil {
+							if err := Game.AudioPlayer.PlaySE(seHit); err != nil {
 								log.Printf("Error: %v\n", err)
 								//panic(err)
 							}
@@ -416,19 +416,19 @@ func (g *Grid) MPUpdate(game *Game) (bool, int, int) {
 }
 
 //Update the grid
-func (g *Grid) MPSpecial(game *Game) (bool, int, int) {
+func (g *Grid) MPSpecial(game *tentsuyu.Game) (bool, int, int) {
 	shotHit := false
 	returnRow, returnCol := 0, 0
-	if tentsuyu.Input.LeftClick().JustReleased() && g.playable {
-		x, y := tentsuyu.Input.GetMouseCoords()
+	if game.Input.LeftClick().JustReleased() && g.playable {
+		x, y := game.Input.GetMouseCoords()
 		//fmt.Printf("Mouse X: %v Mouse Y: %v\n", x-g.X, y-g.Y)
 		if g.Contains(x, y) {
 			tile, row, col := g.DetermineTile(x-g.X, y-g.Y)
 			switch tile {
 			case TileEmpty:
-				if game.player.TakeShot() {
+				if GamePlayer.TakeShot() {
 					shotHit = true
-					switch gs := game.gameState.(type) {
+					switch gs := game.GetGameState().(type) {
 					case *GameMain:
 						gs.bulletCounter.Fire()
 					}
@@ -438,7 +438,7 @@ func (g *Grid) MPSpecial(game *Game) (bool, int, int) {
 					returnRow = row
 					returnCol = col
 
-					if err := PlaySE(seMiss); err != nil {
+					if err := Game.AudioPlayer.PlaySE(seMiss); err != nil {
 						log.Printf("Error: %v\n", err)
 						//panic(err)
 					}
@@ -447,14 +447,14 @@ func (g *Grid) MPSpecial(game *Game) (bool, int, int) {
 			case TileOccupied:
 				for i := 0; i < len(g.Ships); i++ {
 					if g.Ships[i].Contains(x, y) && g.Ships[i].dead == false {
-						if game.player.TakeShot() {
+						if GamePlayer.TakeShot() {
 							shotHit = true
-							switch gs := game.gameState.(type) {
+							switch gs := game.GetGameState().(type) {
 							case *GameMain:
 								gs.bulletCounter.Fire()
 							}
 							g.Ships[i].Hit(row, col)
-							if err := PlaySE(seHit); err != nil {
+							if err := Game.AudioPlayer.PlaySE(seHit); err != nil {
 								log.Printf("Error: %v\n", err)
 								//panic(err)
 							}
@@ -499,7 +499,7 @@ func (g *Grid) AIShot(row, col int) (bool, bool, bool) {
 		g.area[row][col] = TileEmptyShot
 		g.animateArea[row][col] = 1
 
-		if err := PlaySE(seMiss); err != nil {
+		if err := Game.AudioPlayer.PlaySE(seMiss); err != nil {
 			log.Printf("Error: %v\n", err)
 			//panic(err)
 		}
@@ -513,7 +513,7 @@ func (g *Grid) AIShot(row, col int) (bool, bool, bool) {
 				g.prevHit = true
 
 				g.Ships[i].Hit(row, col)
-				if err := PlaySE(seHit); err != nil {
+				if err := Game.AudioPlayer.PlaySE(seHit); err != nil {
 					log.Printf("Error: %v\n", err)
 					//panic(err)
 				}
@@ -574,10 +574,10 @@ func (g *Grid) PlaceShip(row, col int, shipType ShipType, vertical bool) {
 
 }
 
-func (g *Grid) UpdatePlacement(game *Game) {
+func (g *Grid) UpdatePlacement(game *tentsuyu.Game) {
 
-	if tentsuyu.Input.LeftClick().JustReleased() && !game.player.holdingShip {
-		x, y := tentsuyu.Input.GetMouseCoords()
+	if game.Input.LeftClick().JustReleased() && !GamePlayer.holdingShip {
+		x, y := game.Input.GetMouseCoords()
 		//fmt.Printf("Mouse X: %v Mouse Y: %v\n", x-g.X, y-g.Y)
 		if g.Contains(x, y) {
 			tile, _, _ := g.DetermineTile(x-g.X, y-g.Y)
@@ -585,26 +585,26 @@ func (g *Grid) UpdatePlacement(game *Game) {
 			case TileOccupied:
 				for i := 0; i < len(g.Ships); i++ {
 					if g.Ships[i].Contains(x, y) {
-						game.player.heldShip = g.Ships[i]
-						game.player.holdingShip = true
-						g.RemoveShip(game.player.heldShip)
+						GamePlayer.heldShip = g.Ships[i]
+						GamePlayer.holdingShip = true
+						g.RemoveShip(GamePlayer.heldShip)
 					}
 				}
 
 			default:
 			}
 		}
-	} else if tentsuyu.Input.LeftClick().JustReleased() && game.player.holdingShip {
-		x, y := tentsuyu.Input.GetMouseCoords()
+	} else if game.Input.LeftClick().JustReleased() && GamePlayer.holdingShip {
+		x, y := game.Input.GetMouseCoords()
 		//fmt.Printf("Mouse X: %v Mouse Y: %v\n", x-g.X, y-g.Y)
 		if g.Contains(x, y) {
 			tile, row, col := g.DetermineTile(x-g.X, y-g.Y)
 			switch tile {
 			case TileEmpty:
-				if PlayerChoosePosition(col, row, len(game.player.heldShip.sections), game.player.heldShip.vertical, g) {
-					g.PlaceShip(row, col, game.player.heldShip.shipType, game.player.heldShip.vertical)
-					game.player.heldShip = nil
-					game.player.holdingShip = false
+				if PlayerChoosePosition(col, row, len(GamePlayer.heldShip.sections), GamePlayer.heldShip.vertical, g) {
+					g.PlaceShip(row, col, GamePlayer.heldShip.shipType, GamePlayer.heldShip.vertical)
+					GamePlayer.heldShip = nil
+					GamePlayer.holdingShip = false
 					g.MakeAllVisible()
 				}
 

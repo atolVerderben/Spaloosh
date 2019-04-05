@@ -137,7 +137,7 @@ func (c *Character) Draw(screen *ebiten.Image) error {
 	op.ImageParts = c.imgParts
 	op.GeoM.Scale(c.scale, c.scale)
 	op.GeoM.Translate(c.X, c.Y)
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 	return nil
@@ -150,7 +150,7 @@ func (c *Character) DrawBust(screen *ebiten.Image) error {
 	op.GeoM.Scale(c.scale, c.scale)
 	//op.GeoM.Translate(c.X-float64(c.Width/2), c.Y-float64(c.Height/2))
 	op.GeoM.Translate(c.X, c.Y)
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 	return nil
@@ -163,7 +163,7 @@ func (c *Character) DrawBustSad(screen *ebiten.Image) error {
 	op.GeoM.Scale(c.scale, c.scale)
 	//op.GeoM.Translate(c.X-float64(c.Width/2), c.Y-float64(c.Height/2))
 	op.GeoM.Translate(c.X, c.Y)
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 	return nil

@@ -9,7 +9,7 @@ import (
 )
 
 type TitleMain struct {
-	gameStateMsg  GameStateMsg
+	gameStateMsg  tentsuyu.GameStateMsg
 	timer         int
 	offsetX       int
 	offsetY       int
@@ -25,12 +25,12 @@ type TitleMain struct {
 }
 
 func CreateTitleMain() *TitleMain {
-	tentsuyu.Components.Camera.SetZoom(2.0)
+	Game.DefaultCamera.SetZoom(2.0)
 	t := &TitleMain{
-		title: tentsuyu.NewTextElement(400, 25, 100, 20, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		title: tentsuyu.NewTextElement(400, 25, 100, 20, Game.UIController.ReturnFont(FntSmallPixel),
 			[]string{"SPALOOSH!"}, color.Black, 16),
 		//[]string{"Test of a Nure-Onna", "(A.K.A. Spaloosh!)"}, color.White, 8),
-		desc: tentsuyu.NewTextElement(25, 150, 1300, 400, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		desc: tentsuyu.NewTextElement(25, 150, 1300, 400, Game.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Oh! I was just washing my hair human.",
 				"I am a Nure-Onna, we enjoy our privacy.",
 				"I will overlook this if you can win my game.",
@@ -40,22 +40,22 @@ func CreateTitleMain() *TitleMain {
 	}
 
 	t.start = &tentsuyu.MenuElement{
-		UIElement:  tentsuyu.NewTextElementStationary(200, 325, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Start Game"}, color.Black, 24),
+		UIElement:  tentsuyu.NewTextElementStationary(200, 325, 200, 30, Game.UIController.ReturnFont(FntSmallPixel), []string{"Start Game"}, color.Black, 24),
 		Action:     func() { t.gameStateMsg = GameStateMsgReqMainMenu },
 		Selectable: true,
 	}
 
-	testMenu := tentsuyu.NewMenu()
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 150, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Start Game"}, color.Black, 16)},
+	testMenu := tentsuyu.NewMenu(ScreenWidth, ScreenHeight)
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 150, 50, Game.UIController.ReturnFont(FntSmallPixel), []string{"Start Game"}, color.Black, 16)},
 		[]func(){func() { t.gameStateMsg = GameStateMsgReqMainMenu }})
-	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
+	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, Game.UIController.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
 		[]func(){func() {
 			/*prevMenu = "MainMenu"
 			BuildStatsMenu()
-			tentsuyu.Components.UIController.ActivateMenu("StatMenu")
-			tentsuyu.Components.UIController.DeActivateMenu(prevMenu)
+			Game.UIController.UIController.ActivateMenu("StatMenu")
+			Game.UIController.UIController.DeActivateMenu(prevMenu)
 		}})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, Game.UIController.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
 	testMenu.SetBackground(tentsuyu.ImageManager.ReturnImage("topbar-light"), &tentsuyu.BasicImageParts{
 		Sx:     0,
 		Sy:     0,
@@ -83,13 +83,13 @@ func init() {
 
 }
 
-func (t *TitleMain) Update(game *Game) error {
+func (t *TitleMain) Update(game *tentsuyu.Game) error {
 	if t.gameStateMsg == GameStateMsgReqMain {
 		return nil
 	}
 	t.timer++
 
-	t.start.Update()
+	t.start.Update(game.Input, 0, 0)
 	/*if tentsuyu.Input.LeftClick().JustReleased() {
 		tx, ty := tentsuyu.Input.GetMouseCoords()
 
@@ -97,16 +97,16 @@ func (t *TitleMain) Update(game *Game) error {
 			t.gameStateMsg = GameStateMsgReqMain
 		}
 	}*/
-	if tentsuyu.Input.Button("Escape").JustPressed() {
+	if game.Input.Button("Escape").JustPressed() {
 		os.Exit(0)
 	}
-	if tentsuyu.Input.Button("Enter").JustPressed() {
+	if game.Input.Button("Enter").JustPressed() {
 		t.gameStateMsg = GameStateMsgReqMain
 	}
 	return nil
 }
 
-func (t *TitleMain) Draw(game *Game) error {
+func (t *TitleMain) Draw(game *tentsuyu.Game) error {
 	/*op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, 40)
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("map"), op); err != nil {
@@ -128,7 +128,7 @@ func (t *TitleMain) Draw(game *Game) error {
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("shenanijam"), op); err != nil {
 		return err
 	}*/
-	game.DrawBackground() //background.Draw(game.screen, true)
+	DrawBackground(game) //background.Draw(game.screen, true)
 	/*op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(5, 5)
 	op.GeoM.Translate(90, 80)
@@ -149,7 +149,7 @@ func (t *TitleMain) Draw(game *Game) error {
 	//op.GeoM.Translate(250, 20)
 	//tentsuyu.ApplyCameraTransform(op, true)
 
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -163,21 +163,21 @@ func (t *TitleMain) Draw(game *Game) error {
 	op.GeoM.Scale(2, 2)
 	op.GeoM.Translate(620, 175)
 
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
-	t.start.Draw(game.screen)
+	t.start.Draw(game.Screen)
 	//t.title.Draw(game.screen)
 	//t.desc.Draw(game.screen)
 
 	return nil
 }
 
-func (t *TitleMain) Msg() GameStateMsg {
+func (t *TitleMain) Msg() tentsuyu.GameStateMsg {
 	return t.gameStateMsg
 }
 
-func (t *TitleMain) SetMsg(msg GameStateMsg) {
+func (t *TitleMain) SetMsg(msg tentsuyu.GameStateMsg) {
 	t.gameStateMsg = msg
 }

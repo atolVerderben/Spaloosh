@@ -22,7 +22,7 @@ type MPBattle struct {
 	hudText                               []*tentsuyu.MenuElement
 	timer                                 int
 	tick                                  int
-	gameStateMsg                          GameStateMsg
+	gameStateMsg                          tentsuyu.GameStateMsg
 	lose, win                             bool
 	pauseTick                             int
 	prevTime                              int
@@ -35,7 +35,7 @@ type MPBattle struct {
 }
 
 //NewMPBattle creates a MPBattle state
-func NewMPBattle(g *Game) *MPBattle {
+func NewMPBattle(g *tentsuyu.Game) *MPBattle {
 	x := 128.0
 	y := 88.0
 	//x := 206.0 * 2
@@ -59,23 +59,23 @@ func NewMPBattle(g *Game) *MPBattle {
 		opponentShotCol: -1,
 		opponentShotRow: -1,
 	}
-	if g.gameData.gameMode == GameModeOnlineHost {
+	if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineHost {
 		gm.playerTurn = true
 	} else {
 		gm.playerTurn = false
 	}
 	TimeRanOut = false
 	AIBroke = false
-	gm.playerCharacter = NewCharacter(g.gameData.playerCharacter)
+	gm.playerCharacter = NewCharacter(g.GameData.Settings["PlayerCharacter"].ValueText)
 	gm.playerCharacter.SetPosition(600, 14)
-	if g.gameData.playerCharacter == nure {
+	if g.GameData.Settings["PlayerCharacter"].ValueText == nure {
 		gm.playerCharacter.SetPosition(588, -8)
 	}
 
-	if g.gameData.opponentCharacter != "" {
-		gm.enemyCharacter = NewCharacter(g.gameData.opponentCharacter) //458,96
+	if g.GameData.Settings["OpponentCharacter"].ValueText != "" {
+		gm.enemyCharacter = NewCharacter(g.GameData.Settings["OpponentCharacter"].ValueText) //458,96
 		gm.enemyCharacter.SetPosition(128, 14)
-		if g.gameData.opponentCharacter == nure {
+		if g.GameData.Settings["OpponentCharacter"].ValueText == nure {
 			gm.enemyCharacter.SetPosition(96, -8)
 		}
 	}
@@ -84,7 +84,7 @@ func NewMPBattle(g *Game) *MPBattle {
 		for now := range timer.C {
 			// entity updates
 			// this is called every 100 millisecondes
-			gm.SendHello(g.player, now)
+			gm.SendHello(GamePlayer, now)
 		}
 	}()*/
 
@@ -92,17 +92,17 @@ func NewMPBattle(g *Game) *MPBattle {
 	gm.enemyGrid.MakeAllVisible()
 	gm.enemyGrid.playable = false
 	startText := "Your Turn"
-	if g.gameData.gameMode == GameModeOnlineJoin || g.gameData.gameMode == GameModeOnlineRoom {
+	if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin || g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineRoom {
 		startText = "Opponent's Turn"
 	}
 	gm.hudText = []*tentsuyu.MenuElement{
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(340, 432, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{startText}, color.Black, 18),
+			UIElement:  tentsuyu.NewTextElementStationary(340, 432, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{startText}, color.Black, 18),
 			Action:     func() {},
 			Selectable: false,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(426, 407, 300, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click to Randomize", "(Click a monster to manually move it)"}, color.Black, 12),
+			UIElement: tentsuyu.NewTextElementStationary(426, 407, 300, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Click to Randomize", "(Click a monster to manually move it)"}, color.Black, 12),
 			Action: func() {
 				if !gm.playStarted {
 					gm.ai.ResetBoard(gm.enemyGrid)
@@ -113,14 +113,14 @@ func NewMPBattle(g *Game) *MPBattle {
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(325, 30, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click When Ready"}, color.RGBA{R: 124, G: 255, B: 0, A: 255}, 20),
+			UIElement: tentsuyu.NewTextElementStationary(325, 30, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Click When Ready"}, color.RGBA{R: 124, G: 255, B: 0, A: 255}, 20),
 			Action: func() {
-				if g.player.holdingShip || gm.ready {
+				if GamePlayer.holdingShip || gm.ready {
 					return
 				}
 				gm.ready = true
 				(gm.hudText[2].UIElement).(*tentsuyu.TextElement).SetText([]string{"Waiting for Other Player..."})
-				gm.SendShipPlacements(g.player, gm.enemyGrid.ExportNetworkPlacements())
+				gm.SendShipPlacements(GamePlayer, gm.enemyGrid.ExportNetworkPlacements())
 				(gm.hudText[2].UIElement).(*tentsuyu.TextElement).SetFontSize(12)
 				(gm.hudText[2].UIElement).(*tentsuyu.TextElement).SetColor(color.White)
 				gm.hudText[2].Selectable = false
@@ -130,49 +130,49 @@ func NewMPBattle(g *Game) *MPBattle {
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(128, 407, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Player Attack Grid"}, color.Black, 12),
+			UIElement:  tentsuyu.NewTextElementStationary(128, 407, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Player Attack Grid"}, color.Black, 12),
 			Action:     func() {},
 			Selectable: false,
 		},
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(426, 407, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Opponent Attack Grid"}, color.Black, 12),
+			UIElement:  tentsuyu.NewTextElementStationary(426, 407, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Opponent Attack Grid"}, color.Black, 12),
 			Action:     func() {},
 			Selectable: false,
 		},
 		&tentsuyu.MenuElement{ //5
-			UIElement:  tentsuyu.NewTextElementStationary(144, 220, 300, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click in this grid to attack", "Sink all ships to win"}, color.Black, 14),
+			UIElement:  tentsuyu.NewTextElementStationary(144, 220, 300, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Click in this grid to attack", "Sink all ships to win"}, color.Black, 14),
 			Action:     func() {},
 			Selectable: false,
 		},
 
 		&tentsuyu.MenuElement{ // 6
-			UIElement:  tentsuyu.NewTextElementStationary(430, 220, 300, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click to select and move pieces", "Right and Left Arrow rotates"}, color.Black, 14),
+			UIElement:  tentsuyu.NewTextElementStationary(430, 220, 300, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Click to select and move pieces", "Right and Left Arrow rotates"}, color.Black, 14),
 			Action:     func() {},
 			Selectable: false,
 		},
 		/*&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.timer, 160, 10, 80, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), color.Black, 16),
+			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.timer, 160, 10, 80, 50, g.UIController.ReturnFont(FntSmallPixel), color.Black, 16),
 			Action:     func() {},
 			Selectable: false,
 		},*/
 		/*&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(65, 40, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Monsters Remaining: "}, color.Black, 16),
+			UIElement:  tentsuyu.NewTextElementStationary(65, 40, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Monsters Remaining: "}, color.Black, 16),
 			Action:     func() {},
 			Selectable: false,
 		},
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.playerGrid.shipsRemaining, 170, 40, 80, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), color.Black, 16),
+			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.playerGrid.shipsRemaining, 170, 40, 80, 50, g.UIController.ReturnFont(FntSmallPixel), color.Black, 16),
 			Action:     func() {},
 			Selectable: false,
 		},*/
 
 		/*&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(520, 60, 250, 50, tentsuyu.Components.ReturnFont("font1"), []string{"Shots Left: "}, color.Black, 8),
+			UIElement:  tentsuyu.NewTextElementStationary(520, 60, 250, 50, g.UIController.ReturnFont("font1"), []string{"Shots Left: "}, color.Black, 8),
 			Action:     func() {},
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&g.player.shots, 780, 60, 80, 50, tentsuyu.Components.ReturnFont("font1"), color.Black, 8),
+			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&GamePlayer.shots, 780, 60, 80, 50, g.UIController.ReturnFont("font1"), color.Black, 8),
 			Action:     func() {},
 			Selectable: false,
 		},*/
@@ -182,8 +182,8 @@ func NewMPBattle(g *Game) *MPBattle {
 }
 
 //Update the main game
-func (gm *MPBattle) Update(g *Game) error {
-	if tentsuyu.Input.Button("Escape").JustPressed() {
+func (gm *MPBattle) Update(g *tentsuyu.Game) error {
+	if g.Input.Button("Escape").JustPressed() {
 		gm.gameStateMsg = GameStateMsgPause
 		gm.pauseTick = 1
 		return nil
@@ -192,16 +192,16 @@ func (gm *MPBattle) Update(g *Game) error {
 		gm.pauseTick++
 		if gm.pauseTick > 60 {
 			gm.pauseTick = 0
-			gm.prevTime = g.gameData.TimeInSecond()
-			gm.SendHello(g.player, time.Now())
+			gm.prevTime = g.GameData.TimeInSecond()
+			gm.SendHello(GamePlayer, time.Now())
 			//shipPlacements := gm.ai.NetworkSetMyBoard(gm.playerGrid)
-			//gm.SendShipPlacements(g.player, shipPlacements)
+			//gm.SendShipPlacements(GamePlayer, shipPlacements)
 
 		}
 		return nil
 	}
 	for _, text := range gm.hudText {
-		text.Update()
+		text.Update(g.Input, 0, 0)
 	}
 	gm.playerDisplay.Update(gm.playerGrid.Ships)
 	gm.aiDisplay.Update(gm.enemyGrid.Ships)
@@ -226,7 +226,7 @@ func (gm *MPBattle) Update(g *Game) error {
 	if !gm.ready {
 		gm.enemyGrid.UpdatePlacement(g)
 	}
-	g.player.Update()
+	GamePlayer.Update()
 	if gm.playStarted {
 		if gm.playerTurn {
 			(gm.hudText[0].UIElement).(*tentsuyu.TextElement).SetText([]string{"Your Turn"})
@@ -235,10 +235,10 @@ func (gm *MPBattle) Update(g *Game) error {
 				if gm.playStarted == false {
 					gm.playStarted = true
 				}
-				gm.SendMessage(g.player, row, col)
+				gm.SendMessage(GamePlayer, row, col)
 				gm.playerTurn = false
 				gm.enemyTurn = true
-				gm.prevTime = int(g.gameData.TimeInMilliseconds())
+				gm.prevTime = int(g.GameData.TimeInMilliseconds())
 				gm.tick = 0
 
 			}
@@ -263,33 +263,33 @@ func (gm *MPBattle) Update(g *Game) error {
 }
 
 //Draw the main game
-func (gm *MPBattle) Draw(g *Game) error {
-	g.DrawBackground()
+func (gm *MPBattle) Draw(g *tentsuyu.Game) error {
+	DrawBackground(g)
 	if gm.enemyGrid.prevHit {
-		gm.playerCharacter.DrawBustSad(g.screen)
+		gm.playerCharacter.DrawBustSad(g.Screen)
 	} else {
-		gm.playerCharacter.DrawBust(g.screen)
+		gm.playerCharacter.DrawBust(g.Screen)
 	}
 	if gm.enemyCharacter != nil {
 		if gm.playerGrid.prevHit {
-			gm.enemyCharacter.DrawBustSad(g.screen)
+			gm.enemyCharacter.DrawBustSad(g.Screen)
 		} else {
-			gm.enemyCharacter.DrawBust(g.screen)
+			gm.enemyCharacter.DrawBust(g.Screen)
 		}
 	}
-	gm.playerGrid.Draw(g.screen)
-	gm.enemyGrid.Draw(g.screen)
-	if g.player.heldShip != nil {
-		g.player.heldShip.Draw(g.screen)
+	gm.playerGrid.Draw(g.Screen)
+	gm.enemyGrid.Draw(g.Screen)
+	if GamePlayer.heldShip != nil {
+		GamePlayer.heldShip.Draw(g.Screen)
 	}
-	gm.playerDisplay.Draw(g.screen)
-	gm.aiDisplay.Draw(g.screen)
+	gm.playerDisplay.Draw(g.Screen)
+	gm.aiDisplay.Draw(g.Screen)
 	for i, text := range gm.hudText {
 		if i != 1 || !gm.playStarted { // Hide the Reset Board option
 			if i != 2 || !gm.playStarted { //Hide click to play text
 				if i != 4 || gm.playStarted {
 					if i != 0 || gm.playStarted {
-						text.Draw(g.screen)
+						text.Draw(g.Screen)
 					}
 				}
 			}
@@ -299,19 +299,19 @@ func (gm *MPBattle) Draw(g *Game) error {
 }
 
 //Msg returns the current state's message
-func (gm *MPBattle) Msg() GameStateMsg {
+func (gm *MPBattle) Msg() tentsuyu.GameStateMsg {
 	return gm.gameStateMsg
 }
 
 //SetMsg sets the GameStateMsg
-func (gm *MPBattle) SetMsg(msg GameStateMsg) {
+func (gm *MPBattle) SetMsg(msg tentsuyu.GameStateMsg) {
 	gm.gameStateMsg = msg
 }
 
 func (gm *MPBattle) SendHello(p *Player, now time.Time) {
 	comm := &network.Command{
 		CommType: network.CommandHello,
-		Name:     p.gameData.playerCharacter,
+		Name:     p.gameData.Settings["PlayerCharacter"].ValueText,
 	}
 	err := p.commEncoder.Encode(comm)
 
@@ -343,7 +343,7 @@ func (gm *MPBattle) SendShipPlacements(p *Player, shipPlacements []*network.Plac
 	comm := &network.Command{
 		CommType:       network.CommandSetTheBoard,
 		ShipPlacements: shipPlacements,
-		Name:           p.gameData.playerCharacter,
+		Name:           p.gameData.Settings["PlayerCharacter"].ValueText,
 	}
 	err := p.commEncoder.Encode(comm)
 

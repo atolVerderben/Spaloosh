@@ -3,12 +3,14 @@ package isledef
 import (
 	"encoding/gob"
 	"net"
+
+	"github.com/atolVerderben/tentsuyu"
 )
 
 //Player represents the player
 type Player struct {
 	shots       int
-	gameData    *GameData
+	gameData    *tentsuyu.GameData
 	holdingShip bool
 	heldShip    *Ship
 	conn        *net.TCPConn
@@ -17,10 +19,10 @@ type Player struct {
 }
 
 //CreatePlayer returns a pointer to a Player
-func CreatePlayer(g *Game) *Player {
+func CreatePlayer(g *tentsuyu.Game) *Player {
 	p := &Player{
-		shots:    g.gameData.shotMax,
-		gameData: g.gameData,
+		shots:    g.GameData.Settings["ShotMax"].ValueInt,
+		gameData: g.GameData,
 	}
 	return p
 }
@@ -37,9 +39,9 @@ func (p *Player) Update() {
 
 //TakeShot takes a shot and returns true if the player can take a shot. Otherwise return false
 func (p *Player) TakeShot() bool {
-	if p.gameData.gameMode == GameModeNormalBattle ||
-		p.gameData.gameMode == GameModeOnlineHost ||
-		p.gameData.gameMode == GameModeOnlineJoin {
+	if p.gameData.Settings["GameMode"].ValueInt == GameModeNormalBattle ||
+		p.gameData.Settings["GameMode"].ValueInt == GameModeOnlineHost ||
+		p.gameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin {
 		return true
 	}
 	if p.shots > 0 {
@@ -77,7 +79,7 @@ func PlayerChoosePosition(col, row, length int, vertical bool, g *Grid) bool {
 func (p *Player) Reset() {
 	p.heldShip = nil
 	p.holdingShip = false
-	p.gameData.opponentCharacter = ""
-	p.gameData.youStart = false
-	p.gameData.joinedRoom = ""
+	p.gameData.Settings["OpponentCharacter"].ValueText = ""
+	//p.gameData.youStart = false
+	p.gameData.Settings["JoinedRoom"].ValueText = ""
 }

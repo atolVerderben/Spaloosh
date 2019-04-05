@@ -103,8 +103,8 @@ func CreateShip(x, y float64, shipType ShipType, vertical bool) *Ship {
 //Update the ship while it is being moved about the board
 func (s *Ship) Update() {
 	//if s.beingMoved {
-	s.X, s.Y = tentsuyu.Input.GetMouseCoords()
-	if tentsuyu.Input.Button("RotateLeft").JustPressed() {
+	s.X, s.Y = Game.Input.GetMouseCoords()
+	if Game.Input.Button("RotateLeft").JustPressed() {
 		s.AddAngle(-rightAngle)
 		if s.vertical {
 			s.vertical = false
@@ -116,7 +116,7 @@ func (s *Ship) Update() {
 			s.Width = int(s.sectionSize * ZoomLevel)
 		}
 	}
-	if tentsuyu.Input.Button("RotateRight").JustPressed() {
+	if Game.Input.Button("RotateRight").JustPressed() {
 		s.AddAngle(rightAngle)
 		if s.vertical {
 			s.vertical = false
@@ -147,7 +147,7 @@ func (s *Ship) Draw(screen *ebiten.Image) error {
 	op.GeoM.Translate(s.GetPosition())
 	//tentsuyu.ApplyCameraTransform(op, true)
 
-	if err := screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := screen.DrawImage(Game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 

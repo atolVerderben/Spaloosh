@@ -13,7 +13,7 @@ import (
 )
 
 type MPRooms struct {
-	gameStateMsg GameStateMsg
+	gameStateMsg tentsuyu.GameStateMsg
 	timer        int
 	offsetX      int
 	offsetY      int
@@ -28,13 +28,13 @@ type MPRooms struct {
 	prevTime     int
 }
 
-func CreateMPRooms(g *Game) *MPRooms {
-	tentsuyu.Components.Camera.SetZoom(2.0)
+func CreateMPRooms(g *tentsuyu.Game) *MPRooms {
+	g.DefaultCamera.SetZoom(2.0)
 	t := &MPRooms{
-		title: tentsuyu.NewTextElement(300, 5, 400, 20, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		title: tentsuyu.NewTextElement(300, 5, 400, 20, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Choose a room to play"}, color.White, 16),
 		//[]string{"Test of a Nure-Onna", "(A.K.A. Spaloosh!)"}, color.White, 8),
-		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Oh! How rude to sneak up on me while I wash my hair!",
 				"I am a Nure-Onna, but you can call me Nure.",
 				"How about we play a little game to make up for scaring me?",
@@ -49,33 +49,33 @@ func CreateMPRooms(g *Game) *MPRooms {
 				"I get your blood!"}, color.Black, 16),
 	}
 
-	SERVER := g.gameData.server
-	PORT := g.gameData.port
+	SERVER := g.GameData.Settings["Server"].ValueText
+	PORT := g.GameData.Settings["Port"].ValueText
 	conn, _ := net.Dial("tcp", SERVER+":"+PORT)
 
 	if conn != nil {
-		g.player.conn = conn.(*net.TCPConn)
+		GamePlayer.conn = conn.(*net.TCPConn)
 	}
 
-	if g.player.conn != nil {
-		//g.player.bufferReader = bufio.NewReader(g.player.conn)
-		//g.player.commandDecoder = json.NewDecoder(g.player.conn)
-		g.player.wsDecoder = gob.NewDecoder(g.player.conn)
-		g.player.commEncoder = gob.NewEncoder(g.player.conn)
-		go HandleConnection(g.player, g)
+	if GamePlayer.conn != nil {
+		//GamePlayer.bufferReader = bufio.NewReader(GamePlayer.conn)
+		//GamePlayer.commandDecoder = json.NewDecoder(GamePlayer.conn)
+		GamePlayer.wsDecoder = gob.NewDecoder(GamePlayer.conn)
+		GamePlayer.commEncoder = gob.NewEncoder(GamePlayer.conn)
+		go HandleConnection(GamePlayer, g)
 		comm := &network.Command{
 			CommType: network.CommandListRooms,
 		}
-		err := g.player.commEncoder.Encode(comm)
+		err := GamePlayer.commEncoder.Encode(comm)
 
 		if err != nil {
 			fmt.Println(err.Error())
-			g.player.conn.Close()
-			g.player.conn = nil
+			GamePlayer.conn.Close()
+			GamePlayer.conn = nil
 		}
-		t.prevTime = g.gameData.TimeInSecond()
+		t.prevTime = g.GameData.TimeInSecond()
 	}
-	g.gameData.gameMode = GameModeOnlineRoom
+	g.GameData.Settings["GameMode"].ValueInt = GameModeOnlineRoom
 	//tentsuyu.SetCustomCursor(30, 30, 30, 482, tentsuyu.ImageManager.ReturnImage("uiSheet"))
 	return t
 }
@@ -85,13 +85,13 @@ func init() {
 
 }
 
-func (t *MPRooms) Update(game *Game) error {
+func (t *MPRooms) Update(game *tentsuyu.Game) error {
 	if t.gameStateMsg == GameStateMsgReqMain {
 		return nil
 	}
 	t.timer++
 	for _, r := range t.rooms {
-		r.Update()
+		r.Update(game.Input, 0, 0)
 	}
 	/*if tentsuyu.Input.LeftClick().JustReleased() {
 		tx, ty := tentsuyu.Input.GetMouseCoords()
@@ -101,27 +101,27 @@ func (t *MPRooms) Update(game *Game) error {
 		}
 	}*/
 
-	if tentsuyu.Input.Button("Escape").JustPressed() {
+	if game.Input.Button("Escape").JustPressed() {
 		t.gameStateMsg = GameStateMsgReqMPMainMenu
 	}
 
 	if t.connected == true {
 		//t.gameStateMsg = GameStateMsgReqMPMain
 	}
-	if game.gameData.TimeInSecond()-t.prevTime >= 10 {
-		if game.player.conn != nil {
+	if game.GameData.TimeInSecond()-t.prevTime >= 10 {
+		if GamePlayer.conn != nil {
 			comm := &network.Command{
 				CommType: network.CommandListRooms,
 			}
-			err := game.player.commEncoder.Encode(comm)
+			err := GamePlayer.commEncoder.Encode(comm)
 
 			if err != nil {
 				fmt.Println(err.Error())
-				game.player.conn.Close()
-				game.player.conn = nil
+				GamePlayer.conn.Close()
+				GamePlayer.conn = nil
 			}
 		}
-		t.prevTime = game.gameData.TimeInSecond()
+		t.prevTime = game.GameData.TimeInSecond()
 	}
 
 	return nil
@@ -138,9 +138,9 @@ func (t *MPRooms) AddRooms(rooms []int, p *Player) {
 		name := "Room " + strconv.Itoa(num)
 		me := &tentsuyu.MenuElement{
 
-			UIElement: tentsuyu.NewTextElementStationary(startX, startY, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{name + "   " + strconv.Itoa(rooms[i])}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(startX, startY, 200, 30, Game.UIController.ReturnFont(FntSmallPixel), []string{name + "   " + strconv.Itoa(rooms[i])}, color.Black, 18),
 			Action: func() {
-				p.gameData.joinedRoom = name
+				p.gameData.Settings["JoinedRoom"].ValueText = name
 				t.gameStateMsg = GameStateMsgReqMPStage
 			},
 			Selectable: true,
@@ -151,7 +151,7 @@ func (t *MPRooms) AddRooms(rooms []int, p *Player) {
 
 	me := &tentsuyu.MenuElement{
 
-		UIElement: tentsuyu.NewTextElementStationary(startX, startY, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Cancel"}, color.Black, 18),
+		UIElement: tentsuyu.NewTextElementStationary(startX, startY, 200, 30, Game.UIController.ReturnFont(FntSmallPixel), []string{"Cancel"}, color.Black, 18),
 		Action: func() {
 			t.gameStateMsg = GameStateMsgReqMPMainMenu
 		},
@@ -161,7 +161,7 @@ func (t *MPRooms) AddRooms(rooms []int, p *Player) {
 
 }
 
-func (t *MPRooms) Draw(game *Game) error {
+func (t *MPRooms) Draw(game *tentsuyu.Game) error {
 	/*op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, 40)
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("map"), op); err != nil {
@@ -183,7 +183,7 @@ func (t *MPRooms) Draw(game *Game) error {
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("shenanijam"), op); err != nil {
 		return err
 	}*/
-	game.DrawBackground() //background.Draw(game.screen, true)
+	DrawBackground(game) //background.Draw(game.screen, true)
 	/*op := &ebiten.DrawImageOptions{}
 	op.ImageParts = &tentsuyu.BasicImageParts{
 		Sx:     SpalooshSheet.Frames[frameNureOnna].Frame["x"],
@@ -205,18 +205,18 @@ func (t *MPRooms) Draw(game *Game) error {
 
 	game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("textBubble"), op)*/
 	for _, r := range t.rooms {
-		r.Draw(game.screen)
+		r.Draw(game.Screen)
 	}
-	t.title.Draw(game.screen)
+	t.title.Draw(game.Screen)
 	//t.desc.Draw(game.screen)
 
 	return nil
 }
 
-func (t *MPRooms) Msg() GameStateMsg {
+func (t *MPRooms) Msg() tentsuyu.GameStateMsg {
 	return t.gameStateMsg
 }
 
-func (t *MPRooms) SetMsg(msg GameStateMsg) {
+func (t *MPRooms) SetMsg(msg tentsuyu.GameStateMsg) {
 	t.gameStateMsg = msg
 }

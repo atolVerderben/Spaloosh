@@ -18,7 +18,7 @@ type GameBattle struct {
 	hudText                               []*tentsuyu.MenuElement
 	timer                                 int
 	tick                                  int
-	gameStateMsg                          GameStateMsg
+	gameStateMsg                          tentsuyu.GameStateMsg
 	lose, win                             bool
 	pauseTick                             int
 	prevTime                              int
@@ -29,7 +29,7 @@ type GameBattle struct {
 }
 
 //NewGameBattle creates a GameBattle state
-func NewGameBattle(g *Game) *GameBattle {
+func NewGameBattle(g *tentsuyu.Game) *GameBattle {
 	x := 128.0
 	y := 88.0
 	//x := 206.0 * 2
@@ -51,15 +51,15 @@ func NewGameBattle(g *Game) *GameBattle {
 	}
 	TimeRanOut = false
 	AIBroke = false
-	g.gameData.SetGameMode(GameModeNormalBattle)
+	SetGameMode(g.GameData, GameModeNormalBattle)
 	gm.ai.SetBoard(gm.playerGrid)
 	gm.ai.SetBoard(gm.enemyGrid)
 	gm.enemyGrid.MakeAllVisible()
 	gm.enemyGrid.playable = false
 
-	gm.playerCharacter = NewCharacter(g.gameData.playerCharacter)
+	gm.playerCharacter = NewCharacter(g.GameData.Settings["PlayerCharacer"].ValueText)
 	gm.playerCharacter.SetPosition(600, 14)
-	if g.gameData.playerCharacter == nure {
+	if g.GameData.Settings["PlayerCharacer"].ValueText == nure {
 		gm.playerCharacter.SetPosition(96, 0)
 	}
 
@@ -71,12 +71,12 @@ func NewGameBattle(g *Game) *GameBattle {
 
 	gm.hudText = []*tentsuyu.MenuElement{
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(340, 432, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Player's Turn"}, color.Black, 18),
+			UIElement:  tentsuyu.NewTextElementStationary(340, 432, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Player's Turn"}, color.Black, 18),
 			Action:     func() {},
 			Selectable: false,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(426, 407, 300, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click to Randomize", "(Click a monster to manually move it)"}, color.Black, 12),
+			UIElement: tentsuyu.NewTextElementStationary(426, 407, 300, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Click to Randomize", "(Click a monster to manually move it)"}, color.Black, 12),
 			Action: func() {
 				if !gm.playStarted {
 					gm.ai.ResetBoard(gm.enemyGrid)
@@ -87,9 +87,9 @@ func NewGameBattle(g *Game) *GameBattle {
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(325, 30, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click When Ready"}, color.RGBA{R: 124, G: 255, B: 0, A: 255}, 20),
+			UIElement: tentsuyu.NewTextElementStationary(325, 30, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Click When Ready"}, color.RGBA{R: 124, G: 255, B: 0, A: 255}, 20),
 			Action: func() {
-				if g.player.holdingShip {
+				if GamePlayer.holdingShip {
 					return
 				}
 				gm.playStarted = true
@@ -99,56 +99,56 @@ func NewGameBattle(g *Game) *GameBattle {
 			Selectable: true,
 		},
 		/*&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(450, 432, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Turn"}, color.Black, 18),
+			UIElement:  tentsuyu.NewTextElementStationary(450, 432, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Turn"}, color.Black, 18),
 			Action:     func() {},
 			Selectable: false,
 		},*/
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(128, 407, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Player Attack Grid"}, color.Black, 12),
+			UIElement:  tentsuyu.NewTextElementStationary(128, 407, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Player Attack Grid"}, color.Black, 12),
 			Action:     func() {},
 			Selectable: false,
 		},
 
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(426, 407, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Nure Attack Grid"}, color.Black, 12),
+			UIElement:  tentsuyu.NewTextElementStationary(426, 407, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Nure Attack Grid"}, color.Black, 12),
 			Action:     func() {},
 			Selectable: false,
 		},
 
 		&tentsuyu.MenuElement{ //5
-			UIElement:  tentsuyu.NewTextElementStationary(144, 220, 300, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click in this grid to attack", "Sink all ships to win"}, color.Black, 14),
+			UIElement:  tentsuyu.NewTextElementStationary(144, 220, 300, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Click in this grid to attack", "Sink all ships to win"}, color.Black, 14),
 			Action:     func() {},
 			Selectable: false,
 		},
 
 		&tentsuyu.MenuElement{ // 6
-			UIElement:  tentsuyu.NewTextElementStationary(430, 220, 300, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Click to select and move pieces", "Right and Left Arrow rotates"}, color.Black, 14),
+			UIElement:  tentsuyu.NewTextElementStationary(430, 220, 300, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Click to select and move pieces", "Right and Left Arrow rotates"}, color.Black, 14),
 			Action:     func() {},
 			Selectable: false,
 		},
 		/*&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.timer, 160, 10, 80, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), color.Black, 16),
+			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.timer, 160, 10, 80, 50, g.UIController.ReturnFont(FntSmallPixel), color.Black, 16),
 			Action:     func() {},
 			Selectable: false,
 		},*/
 		/*&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(65, 40, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Monsters Remaining: "}, color.Black, 16),
+			UIElement:  tentsuyu.NewTextElementStationary(65, 40, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Monsters Remaining: "}, color.Black, 16),
 			Action:     func() {},
 			Selectable: false,
 		},
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.playerGrid.shipsRemaining, 170, 40, 80, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), color.Black, 16),
+			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&gm.playerGrid.shipsRemaining, 170, 40, 80, 50, g.UIController.ReturnFont(FntSmallPixel), color.Black, 16),
 			Action:     func() {},
 			Selectable: false,
 		},*/
 
 		/*&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewTextElementStationary(520, 60, 250, 50, tentsuyu.Components.ReturnFont("font1"), []string{"Shots Left: "}, color.Black, 8),
+			UIElement:  tentsuyu.NewTextElementStationary(520, 60, 250, 50, g.UIController.ReturnFont("font1"), []string{"Shots Left: "}, color.Black, 8),
 			Action:     func() {},
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&g.player.shots, 780, 60, 80, 50, tentsuyu.Components.ReturnFont("font1"), color.Black, 8),
+			UIElement:  tentsuyu.NewUINumberDisplayIntStationary(&GamePlayer.shots, 780, 60, 80, 50, g.UIController.ReturnFont("font1"), color.Black, 8),
 			Action:     func() {},
 			Selectable: false,
 		},*/
@@ -158,8 +158,8 @@ func NewGameBattle(g *Game) *GameBattle {
 }
 
 //Update the main game
-func (gm *GameBattle) Update(g *Game) error {
-	if tentsuyu.Input.Button("Escape").JustPressed() {
+func (gm *GameBattle) Update(g *tentsuyu.Game) error {
+	if g.Input.Button("Escape").JustPressed() {
 		gm.gameStateMsg = GameStateMsgPause
 		gm.pauseTick = 1
 		return nil
@@ -168,13 +168,13 @@ func (gm *GameBattle) Update(g *Game) error {
 		gm.pauseTick++
 		if gm.pauseTick > 60 {
 			gm.pauseTick = 0
-			gm.prevTime = g.gameData.TimeInSecond()
+			gm.prevTime = g.GameData.TimeInSecond()
 
 		}
 		return nil
 	}
 	for _, text := range gm.hudText {
-		text.Update()
+		text.Update(g.Input, 0, 0)
 	}
 	gm.playerDisplay.Update(gm.playerGrid.Ships)
 	gm.aiDisplay.Update(gm.enemyGrid.Ships)
@@ -196,14 +196,14 @@ func (gm *GameBattle) Update(g *Game) error {
 	if !gm.playStarted {
 		gm.enemyGrid.UpdatePlacement(g)
 	}
-	g.player.Update()
+	GamePlayer.Update()
 	if gm.playStarted {
 		if gm.playerTurn {
 
 			if gm.playerGrid.Update(g) {
 				gm.playerTurn = false
 				gm.startEnemyTurn = true
-				gm.prevTime = int(g.gameData.TimeInMilliseconds())
+				gm.prevTime = int(g.GameData.TimeInMilliseconds())
 				gm.tick = 0
 				(gm.hudText[0].UIElement).(*tentsuyu.TextElement).SetText([]string{"Nure's Turn"})
 			}
@@ -211,14 +211,14 @@ func (gm *GameBattle) Update(g *Game) error {
 	}
 	if gm.startEnemyTurn {
 		gm.tick++
-		if g.gameData.TimeInMilliseconds()-int64(gm.prevTime) >= 1500 {
+		if g.GameData.TimeInMilliseconds()-(gm.prevTime) >= 1500 {
 			gm.startEnemyTurn = false
 			gm.enemyTurn = true
-			gm.prevTime = g.gameData.TimeInSecond()
+			gm.prevTime = g.GameData.TimeInSecond()
 		}
 	}
 	if gm.enemyTurn {
-		if g.gameData.TimeInSecond()-gm.prevTime >= 10 {
+		if g.GameData.TimeInSecond()-gm.prevTime >= 10 {
 			AIBroke = true
 			gm.win = true
 			gm.endGameTransition = true
@@ -245,33 +245,33 @@ func (gm *GameBattle) Update(g *Game) error {
 }
 
 //Draw the main game
-func (gm *GameBattle) Draw(g *Game) error {
-	g.DrawBackground()
+func (gm *GameBattle) Draw(g *tentsuyu.Game) error {
+	DrawBackground(g)
 	if gm.enemyGrid.prevHit {
-		gm.playerCharacter.DrawBustSad(g.screen)
+		gm.playerCharacter.DrawBustSad(g.Screen)
 	} else {
-		gm.playerCharacter.DrawBust(g.screen)
+		gm.playerCharacter.DrawBust(g.Screen)
 	}
 	if gm.enemyCharacter != nil {
 		if gm.playerGrid.prevHit {
-			gm.enemyCharacter.DrawBustSad(g.screen)
+			gm.enemyCharacter.DrawBustSad(g.Screen)
 		} else {
-			gm.enemyCharacter.DrawBust(g.screen)
+			gm.enemyCharacter.DrawBust(g.Screen)
 		}
 	}
-	gm.playerGrid.Draw(g.screen)
-	gm.enemyGrid.Draw(g.screen)
-	if g.player.heldShip != nil {
-		g.player.heldShip.Draw(g.screen)
+	gm.playerGrid.Draw(g.Screen)
+	gm.enemyGrid.Draw(g.Screen)
+	if GamePlayer.heldShip != nil {
+		GamePlayer.heldShip.Draw(g.Screen)
 	}
-	gm.playerDisplay.Draw(g.screen)
-	gm.aiDisplay.Draw(g.screen)
+	gm.playerDisplay.Draw(g.Screen)
+	gm.aiDisplay.Draw(g.Screen)
 	for i, text := range gm.hudText {
 		if i != 1 || !gm.playStarted { // Hide the Reset Board option
 			if i != 2 || !gm.playStarted { //Hide click to play text
 				if i != 4 || gm.playStarted {
 					if i != 0 || gm.playStarted {
-						text.Draw(g.screen)
+						text.Draw(g.Screen)
 					}
 				}
 			}
@@ -281,11 +281,11 @@ func (gm *GameBattle) Draw(g *Game) error {
 }
 
 //Msg returns the current state's message
-func (gm *GameBattle) Msg() GameStateMsg {
+func (gm *GameBattle) Msg() tentsuyu.GameStateMsg {
 	return gm.gameStateMsg
 }
 
 //SetMsg sets the GameStateMsg
-func (gm *GameBattle) SetMsg(msg GameStateMsg) {
+func (gm *GameBattle) SetMsg(msg tentsuyu.GameStateMsg) {
 	gm.gameStateMsg = msg
 }

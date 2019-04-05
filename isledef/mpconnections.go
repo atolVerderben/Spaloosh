@@ -4,16 +4,17 @@ import (
 	"log"
 
 	"github.com/atolVerderben/spaloosh/network"
+	"github.com/atolVerderben/tentsuyu"
 )
 
-func HandleConnection(p *Player, g *Game) {
+func HandleConnection(p *Player, g *tentsuyu.Game) {
 	for p.conn != nil {
 
 		comm := network.Command{}
 		err := p.wsDecoder.Decode(&comm)
 
 		if err == nil {
-			switch gs := g.gameState.(type) {
+			switch gs := g.GetGameState().(type) {
 			case *MPStage:
 				if comm.CommType == network.CommandConnected && comm.Row == 2 {
 					gs.connected = true
@@ -41,7 +42,7 @@ func HandleConnection(p *Player, g *Game) {
 
 				}
 				if comm.CommType == network.CommandSetTheBoard {
-					p.gameData.opponentCharacter = comm.Name
+					p.gameData.Settings["OpponentCharacter"].ValueText = comm.Name
 					gs.ai.NetworkSetOpponentBoard(gs.playerGrid, comm.ShipPlacements)
 					//gs.enemyGrid.MakeAllVisible()
 					//gs.enemyGrid.playable = false
@@ -50,7 +51,7 @@ func HandleConnection(p *Player, g *Game) {
 				}
 				if comm.CommType == network.CommandHello {
 					if comm.Name != "" {
-						p.gameData.opponentCharacter = comm.Name
+						p.gameData.Settings["OpponentCharacter"].ValueText = comm.Name
 						gs.enemyCharacter = NewCharacter(comm.Name) //458,96
 						gs.enemyCharacter.SetPosition(128, 14)
 						if comm.Name == nure {
@@ -77,7 +78,7 @@ func HandleConnection(p *Player, g *Game) {
 
 			if comm.CommType == network.CommandDisconnected {
 				log.Println("Other Player has left the game.")
-				g.gameState.SetMsg(GameStateMsgReqLostConnection)
+				g.GetGameState().SetMsg(GameStateMsgReqLostConnection)
 			}
 		}
 
@@ -85,7 +86,7 @@ func HandleConnection(p *Player, g *Game) {
 			log.Println(err.Error())
 			//p.conn.Close()
 			p.conn = nil
-			switch gs := g.gameState.(type) {
+			switch gs := g.GetGameState().(type) {
 			case *MPGameOver:
 				if comm.CommType == network.CommandDisconnected {
 					log.Println("Other Player has left the game.")
@@ -99,7 +100,7 @@ func HandleConnection(p *Player, g *Game) {
 					return
 				}
 			default:
-				g.gameState.SetMsg(GameStateMsgReqLostConnection)
+				g.GetGameState().SetMsg(GameStateMsgReqLostConnection)
 			}
 		}
 

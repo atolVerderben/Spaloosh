@@ -8,7 +8,7 @@ import (
 )
 
 type MainMenu struct {
-	gameStateMsg GameStateMsg
+	gameStateMsg tentsuyu.GameStateMsg
 	timer        int
 	offsetX      int
 	offsetY      int
@@ -20,10 +20,10 @@ type MainMenu struct {
 	desc         *tentsuyu.TextElement
 }
 
-func CreateMainMenu(g *Game) *MainMenu {
-	if g.player.conn != nil {
-		g.player.conn.Close()
-		g.player.conn = nil
+func CreateMainMenu(g *tentsuyu.Game) *MainMenu {
+	if GamePlayer.conn != nil {
+		GamePlayer.conn.Close()
+		GamePlayer.conn = nil
 	}
 
 	if GameServer != nil {
@@ -31,14 +31,14 @@ func CreateMainMenu(g *Game) *MainMenu {
 	}
 	GameServer = nil
 
-	g.player.Reset()
+	GamePlayer.Reset()
 
-	tentsuyu.Components.Camera.SetZoom(2.0)
+	g.DefaultCamera.SetZoom(2.0)
 	t := &MainMenu{
-		title: tentsuyu.NewTextElement(100, 5, 100, 20, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		title: tentsuyu.NewTextElement(100, 5, 100, 20, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"SPALOOSH!"}, color.White, 16),
 		//[]string{"Test of a Nure-Onna", "(A.K.A. Spaloosh!)"}, color.White, 8),
-		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Oh! How rude to sneak up on me while I wash my hair!",
 				"I am a Nure-Onna, but you can call me Nure.",
 				"How about we play a little game to make up for scaring me?",
@@ -53,32 +53,32 @@ func CreateMainMenu(g *Game) *MainMenu {
 				"I get your blood!"}, color.Black, 16),
 	}
 
-	testMenu := tentsuyu.NewMenu()
+	testMenu := tentsuyu.NewMenu(ScreenWidth, ScreenHeight)
 	testMenu.AddElement([]tentsuyu.UIElement{
-		tentsuyu.NewTextElement(0, 0, 155, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Play Timed Game:"}, color.Black, 16),
-		tentsuyu.NewTextElement(0, 0, 70, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Normal"}, color.Black, 16),
-		tentsuyu.NewTextElement(0, 0, 50, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Hard"}, color.Black, 16)},
+		tentsuyu.NewTextElement(0, 0, 155, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Play Timed Game:"}, color.Black, 16),
+		tentsuyu.NewTextElement(0, 0, 70, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Normal"}, color.Black, 16),
+		tentsuyu.NewTextElement(0, 0, 50, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Hard"}, color.Black, 16)},
 		[]func(){nil,
 			func() {
 				t.gameStateMsg = GameStateMsgReqMain
-				g.gameData.SetGameMode(GameModeNormalTimed)
+				SetGameMode(g.GameData, GameModeNormalTimed)
 			},
 			func() {
 				t.gameStateMsg = GameStateMsgReqMain
-				g.gameData.SetGameMode(GameModeHardcoreTimed)
+				SetGameMode(g.GameData, GameModeHardcoreTimed)
 			}})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Play Monster Battle"}, color.Black, 16)},
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Play Monster Battle"}, color.Black, 16)},
 		[]func(){func() { t.gameStateMsg = GameStateMsgReqBattleCharacterSelect }})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Spaloosh With Friends  (Online)"}, color.Black, 16)},
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Spaloosh With Friends  (Online)"}, color.Black, 16)},
 		[]func(){func() { t.gameStateMsg = GameStateMsgReqMPMainMenu }})
-	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
+	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
 		[]func(){func() {
 			/*prevMenu = "MainMenu"
 			BuildStatsMenu()
-			tentsuyu.Components.UIController.ActivateMenu("StatMenu")
-			tentsuyu.Components.UIController.DeActivateMenu(prevMenu)
+			g.UIController.UIController.ActivateMenu("StatMenu")
+			g.UIController.UIController.DeActivateMenu(prevMenu)
 		}})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
 	testMenu.SetBackground(tentsuyu.ImageManager.ReturnImage("topbar-light"), &tentsuyu.BasicImageParts{
 		Sx:     0,
 		Sy:     0,
@@ -106,13 +106,13 @@ func init() {
 
 }
 
-func (t *MainMenu) Update(game *Game) error {
+func (t *MainMenu) Update(game *tentsuyu.Game) error {
 	if t.gameStateMsg == GameStateMsgReqMain {
 		return nil
 	}
 	t.timer++
 
-	t.menu.Update()
+	t.menu.Update(game.Input, 0, 0)
 	/*if tentsuyu.Input.LeftClick().JustReleased() {
 		tx, ty := tentsuyu.Input.GetMouseCoords()
 
@@ -120,38 +120,38 @@ func (t *MainMenu) Update(game *Game) error {
 			t.gameStateMsg = GameStateMsgReqMain
 		}
 	}*/
-	if tentsuyu.Input.Button("Escape").JustPressed() {
+	if game.Input.Button("Escape").JustPressed() {
 		t.gameStateMsg = GameStateMsgReqTitle
 	}
-	if tentsuyu.Input.Button("Enter").Down() {
+	if game.Input.Button("Enter").Down() {
 		t.gameStateMsg = GameStateMsgReqMain
 	}
 	return nil
 }
 
-func (t *MainMenu) Draw(game *Game) error {
+func (t *MainMenu) Draw(game *tentsuyu.Game) error {
 	/*op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, 40)
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("map"), op); err != nil {
+	if err := game.Screen.DrawImage(tentsuyu.ImageManager.ReturnImage("map"), op); err != nil {
 		return err
 	}
 	op.GeoM.Translate(0, -40)
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("topbar"), op); err != nil {
+	if err := game.Screen.DrawImage(tentsuyu.ImageManager.ReturnImage("topbar"), op); err != nil {
 		return err
 	}*/
-	/*t.background.Draw(game.screen, false)
-	t.menu.Draw(game.screen)
-	t.title.Draw(game.screen)
+	/*t.background.Draw(game.Screen, false)
+	t.menu.Draw(game.Screen)
+	t.title.Draw(game.Screen)
 
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(0.3, 0.3)
 	op.GeoM.Translate(400, 400)
 
 	tentsuyu.ApplyCameraTransform(op, true)
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("shenanijam"), op); err != nil {
+	if err := game.Screen.DrawImage(tentsuyu.ImageManager.ReturnImage("shenanijam"), op); err != nil {
 		return err
 	}*/
-	game.DrawBackground() //background.Draw(game.screen, true)
+	DrawBackground(game) //background.Draw(game.Screen, true)
 	op := &ebiten.DrawImageOptions{}
 	op.ImageParts = &tentsuyu.BasicImageParts{
 		Sx:     SpalooshSheet.Frames[frameNureOnna].Frame["x"],
@@ -163,7 +163,7 @@ func (t *MainMenu) Draw(game *Game) error {
 	op.GeoM.Translate(615, 290)
 	//tentsuyu.ApplyCameraTransform(op, true)
 
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -171,19 +171,19 @@ func (t *MainMenu) Draw(game *Game) error {
 	op.GeoM.Scale(float64(600), float64(205))
 	op.GeoM.Translate(20, 270)
 
-	game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("textBubble"), op)
+	game.Screen.DrawImage(game.ImageManager.ReturnImage("textBubble"), op)
 
-	t.menu.Draw(game.screen)
-	//t.title.Draw(game.screen)
-	t.desc.Draw(game.screen)
+	t.menu.Draw(game.Screen)
+	//t.title.Draw(game.Screen)
+	t.desc.Draw(game.Screen)
 
 	return nil
 }
 
-func (t *MainMenu) Msg() GameStateMsg {
+func (t *MainMenu) Msg() tentsuyu.GameStateMsg {
 	return t.gameStateMsg
 }
 
-func (t *MainMenu) SetMsg(msg GameStateMsg) {
+func (t *MainMenu) SetMsg(msg tentsuyu.GameStateMsg) {
 	t.gameStateMsg = msg
 }

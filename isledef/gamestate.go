@@ -1,35 +1,26 @@
 package isledef
 
-//GameState represents the current state of the game
-type GameState interface {
-	Update(g *Game) error
-	Draw(g *Game) error
-	Msg() GameStateMsg
-	SetMsg(GameStateMsg)
-}
-
-//GameStateMsg represents the messages sent from the GameState that may change states
-type GameStateMsg int
+import "github.com/atolVerderben/tentsuyu"
 
 //These are the available GameStateMsg
 const (
-	GameStateMsgNone GameStateMsg = iota
-	GameStateMsgReqTitle
-	GameStateMsgReqMain
-	GameStateGameOver
-	GameStateGameWin
-	GameStateMsgReqMainMenu
-	GameStateMsgReqBattle
-	GameStateMsgPause
-	GameStateMsgUnPause
-	GameStateMsgReqMPStage
-	GameStateMsgReqMPMain
-	GameStateMsgReqMPMainMenu
-	GameStateMsgReqLostConnection
-	GameStateMsgReqBattleCharacterSelect
-	GameStateMsgReqMPHelp
-	GameStateMsgReqMPGameOverWin
-	GameStateMsgReqMPGameOverLose
-	GameStateMsgReqHostingRooms
-	GameStateMsgReqSetIP
+	GameStateMsgNone                     tentsuyu.GameStateMsg = "None"
+	GameStateMsgReqTitle                                       = "Request Title"
+	GameStateMsgReqMain                                        = "Request Main"
+	GameStateGameOver                                          = "Game Over Lose"
+	GameStateGameWin                                           = "Game Over Win"
+	GameStateMsgReqMainMenu                                    = "Request MainMenu"
+	GameStateMsgReqBattle                                      = "Request battle"
+	GameStateMsgPause                                          = "Request Pause"
+	GameStateMsgUnPause                                        = "UnPause"
+	GameStateMsgReqMPStage                                     = "Request MP Stage"
+	GameStateMsgReqMPMain                                      = "Request MP Main"
+	GameStateMsgReqMPMainMenu                                  = "Request MP MainMenu"
+	GameStateMsgReqLostConnection                              = "Request Lost Connection"
+	GameStateMsgReqBattleCharacterSelect                       = "Battle Character Select"
+	GameStateMsgReqMPHelp                                      = "MP Help"
+	GameStateMsgReqMPGameOverWin                               = "Game Over Win MP"
+	GameStateMsgReqMPGameOverLose                              = "Game Over Lose MP"
+	GameStateMsgReqHostingRooms                                = "MP Hosting Rooms"
+	GameStateMsgReqSetIP                                       = "Set IP"
 )

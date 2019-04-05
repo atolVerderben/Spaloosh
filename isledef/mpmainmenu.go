@@ -15,7 +15,7 @@ var (
 )
 
 type MPMainMenu struct {
-	gameStateMsg              GameStateMsg
+	gameStateMsg              tentsuyu.GameStateMsg
 	timer                     int
 	offsetX                   int
 	offsetY                   int
@@ -34,114 +34,114 @@ type MPMainMenu struct {
 	ghost, vamp, hunter, nure *tentsuyu.BasicObject
 }
 
-func CreateMPMainMenu(g *Game) *MPMainMenu {
-	if g.player.conn != nil {
-		g.player.conn.Close()
-		g.player.conn = nil
+func CreateMPMainMenu(g *tentsuyu.Game) *MPMainMenu {
+	if GamePlayer.conn != nil {
+		GamePlayer.conn.Close()
+		GamePlayer.conn = nil
 	}
 
 	if GameServer != nil {
 		GameServer.ShutDown()
 	}
 	GameServer = nil
-	g.player.Reset()
-	tentsuyu.Components.Camera.SetZoom(2.0)
+	GamePlayer.Reset()
+	g.DefaultCamera.SetZoom(2.0)
 	t := &MPMainMenu{
-		title: tentsuyu.NewTextElement(175, 5, 500, 20, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		title: tentsuyu.NewTextElement(175, 5, 500, 20, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Choose your character and spaloosh with friends!"}, color.White, 16),
 		//[]string{"Test of a Nure-Onna", "(A.K.A. Spaloosh!)"}, color.White, 8),
-		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Challenge your friends to a game of Spaloosh!",
 				""}, color.Black, 16),
 	}
 
 	t.charOptions = []*tentsuyu.MenuElement{
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(20, 150, 200, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Tiffany", "the Ghost"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(20, 150, 200, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Tiffany", "the Ghost"}, color.Black, 18),
 			Action: func() {
 				t.selected = ghostgirl
 			},
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(645, 150, 200, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Petar", "the Vampire"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(645, 150, 200, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Petar", "the Vampire"}, color.Black, 18),
 			Action: func() {
 				t.selected = vampire
 			},
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(20, 260, 200, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Archinal", "the Hunter"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(20, 260, 200, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Archinal", "the Hunter"}, color.Black, 18),
 			Action: func() {
 				t.selected = hunter
 			},
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(655, 260, 200, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Nure", "Nure-Onna"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(655, 260, 200, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Nure", "Nure-Onna"}, color.Black, 18),
 			Action: func() {
 				t.selected = nure
 			},
 			Selectable: true,
 		},
 	}
-	testMenu := tentsuyu.NewMenu()
+	testMenu := tentsuyu.NewMenu(ScreenWidth, ScreenHeight)
 	testMenu.AddElement([]tentsuyu.UIElement{
-		tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Host Multiplayer Game"}, color.Black, 16),
+		tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Host Multiplayer Game"}, color.Black, 16),
 	},
 		[]func(){
 			func() {
 				t.gameStateMsg = GameStateMsgReqSetIP //GameStateMsgReqMPStage
-				g.gameData.SetGameMode(GameModeOnlineHost)
+				SetGameMode(g.GameData, GameModeOnlineHost)
 				//g.gameData.server = t.serverBox.Text.ReturnText()
 				//g.gameData.port = t.portBox.Text.ReturnText()
-				g.gameData.playerCharacter = t.selected
+				g.GameData.Settings["PlayerCharacter"].ValueText = t.selected
 				if t.selected == "" {
-					g.gameData.playerCharacter = nure
+					g.GameData.Settings["PlayerCharacter"].ValueText = nure
 				}
 			},
 		})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Join Direct IP Game"}, color.Black, 16)},
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Join Direct IP Game"}, color.Black, 16)},
 		[]func(){func() {
 			t.gameStateMsg = GameStateMsgReqSetIP //GameStateMsgReqMPStage
-			g.gameData.SetGameMode(GameModeOnlineJoin)
+			SetGameMode(g.GameData, GameModeOnlineJoin)
 			//g.gameData.server = t.serverBox.Text.ReturnText()
 			//g.gameData.port = t.portBox.Text.ReturnText()
-			g.gameData.playerCharacter = t.selected
+			g.GameData.Settings["PlayerCharacter"].ValueText = t.selected
 			if t.selected == "" {
-				g.gameData.playerCharacter = nure
+				g.GameData.Settings["PlayerCharacter"].ValueText = nure
 			}
 		}})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Join Server Game"}, color.Black, 16)},
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Join Server Game"}, color.Black, 16)},
 		[]func(){func() {
 			t.gameStateMsg = GameStateMsgReqSetIP //GameStateMsgReqHostingRooms
-			g.gameData.SetGameMode(GameModeOnlineRoom)
-			g.gameData.playerCharacter = t.selected
+			SetGameMode(g.GameData, GameModeOnlineRoom)
+			g.GameData.Settings["PlayerCharacter"].ValueText = t.selected
 			if t.selected == "" {
-				g.gameData.playerCharacter = nure
+				g.GameData.Settings["PlayerCharacter"].ValueText = nure
 			}
 		}})
 	testMenu.AddElement([]tentsuyu.UIElement{
-		tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Setup Help"}, color.Black, 16),
+		tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Setup Help"}, color.Black, 16),
 	},
 		[]func(){
 			func() {
 				t.gameStateMsg = GameStateMsgReqMPHelp
 			},
 		})
-	/*t.serverBoxInfo = tentsuyu.NewTextElement(275, 250, 300, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Server IP Address:"}, color.Black, 16)
-	t.portBoxInfo = tentsuyu.NewTextElement(275, 300, 300, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Port Number:"}, color.Black, 16)
-	t.serverBox = tentsuyu.NewTextBox(475, 250, 200, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{g.gameData.server}, color.Black, 16)
-	t.portBox = tentsuyu.NewTextBox(475, 300, 100, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{g.gameData.port}, color.Black, 16)
+	/*t.serverBoxInfo = tentsuyu.NewTextElement(275, 250, 300, 50, g.UIController.ReturnFont(FntSmallPixel), []string{"Server IP Address:"}, color.Black, 16)
+	t.portBoxInfo = tentsuyu.NewTextElement(275, 300, 300, 50, g.UIController.ReturnFont(FntSmallPixel), []string{"Port Number:"}, color.Black, 16)
+	t.serverBox = tentsuyu.NewTextBox(475, 250, 200, 25, g.UIController.ReturnFont(FntSmallPixel), []string{g.gameData.server}, color.Black, 16)
+	t.portBox = tentsuyu.NewTextBox(475, 300, 100, 25, g.UIController.ReturnFont(FntSmallPixel), []string{g.gameData.port}, color.Black, 16)
 	*/
-	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
+	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
 		[]func(){func() {
 			/*prevMenu = "MPMainMenu"
 			BuildStatsMenu()
-			tentsuyu.Components.UIController.ActivateMenu("StatMenu")
-			tentsuyu.Components.UIController.DeActivateMenu(prevMenu)
+			g.UIController.UIController.ActivateMenu("StatMenu")
+			g.UIController.UIController.DeActivateMenu(prevMenu)
 		}})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
 	testMenu.SetBackground(tentsuyu.ImageManager.ReturnImage("topbar-light"), &tentsuyu.BasicImageParts{
 		Sx:     0,
 		Sy:     0,
@@ -195,21 +195,21 @@ func init() {
 
 }
 
-func (t *MPMainMenu) Update(game *Game) error {
+func (t *MPMainMenu) Update(game *tentsuyu.Game) error {
 	if t.gameStateMsg == GameStateMsgReqMain {
 		return nil
 	}
 	t.timer++
 
-	t.menu.Update()
+	t.menu.Update(game.Input, 0, 0)
 	//t.serverBox.Update()
 	//t.portBox.Update()
 	for _, o := range t.charOptions {
 		o.UIElement.(*tentsuyu.TextElement).UnHighlighted()
-		o.Update()
+		o.Update(game.Input, 0, 0)
 	}
-	if tentsuyu.Input.LeftClick().JustReleased() {
-		tx, ty := tentsuyu.Input.GetMouseCoords()
+	if game.Input.LeftClick().JustReleased() {
+		tx, ty := game.Input.GetMouseCoords()
 
 		if t.ghost.Contains(tx, ty) {
 			t.selected = ghostgirl
@@ -224,16 +224,16 @@ func (t *MPMainMenu) Update(game *Game) error {
 			t.selected = nure
 		}
 	}
-	if tentsuyu.Input.Button("Escape").JustPressed() {
+	if game.Input.Button("Escape").JustPressed() {
 		t.gameStateMsg = GameStateMsgReqMainMenu
 	}
-	if tentsuyu.Input.Button("Enter").Down() {
+	if game.Input.Button("Enter").Down() {
 		t.gameStateMsg = GameStateMsgReqMain
 	}
 	return nil
 }
 
-func (t *MPMainMenu) Draw(game *Game) error {
+func (t *MPMainMenu) Draw(game *tentsuyu.Game) error {
 	/*op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, 40)
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("map"), op); err != nil {
@@ -255,7 +255,7 @@ func (t *MPMainMenu) Draw(game *Game) error {
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("shenanijam"), op); err != nil {
 		return err
 	}*/
-	game.DrawBackground() //background.Draw(game.screen, true)
+	DrawBackground(game) //background.Draw(game.screen, true)
 
 	//Nure
 	op := &ebiten.DrawImageOptions{}
@@ -269,7 +269,7 @@ func (t *MPMainMenu) Draw(game *Game) error {
 	op.GeoM.Translate(t.nure.X, t.nure.Y)
 	//tentsuyu.ApplyCameraTransform(op, true)
 
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -285,7 +285,7 @@ func (t *MPMainMenu) Draw(game *Game) error {
 	op.GeoM.Translate(t.ghost.X, t.ghost.Y)
 	//tentsuyu.ApplyCameraTransform(op, true)
 
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -299,7 +299,7 @@ func (t *MPMainMenu) Draw(game *Game) error {
 	}
 	op.GeoM.Scale(3, 3)
 	op.GeoM.Translate(t.vamp.X, t.vamp.Y)
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -313,7 +313,7 @@ func (t *MPMainMenu) Draw(game *Game) error {
 	}
 	op.GeoM.Scale(3, 3)
 	op.GeoM.Translate(t.hunter.X, t.hunter.Y)
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -349,23 +349,23 @@ func (t *MPMainMenu) Draw(game *Game) error {
 		t.charOptions[3].UIElement.(*tentsuyu.TextElement).Highlighted()
 	}
 	for _, o := range t.charOptions {
-		o.Draw(game.screen)
+		o.Draw(game.Screen)
 	}
-	t.menu.Draw(game.screen)
+	t.menu.Draw(game.Screen)
 	//t.serverBoxInfo.Draw(game.screen)
 	//t.portBoxInfo.Draw(game.screen)
 	//t.serverBox.Draw(game.screen)
 	//t.portBox.Draw(game.screen)
-	t.title.Draw(game.screen)
+	t.title.Draw(game.Screen)
 	//t.desc.Draw(game.screen)
 
 	return nil
 }
 
-func (t *MPMainMenu) Msg() GameStateMsg {
+func (t *MPMainMenu) Msg() tentsuyu.GameStateMsg {
 	return t.gameStateMsg
 }
 
-func (t *MPMainMenu) SetMsg(msg GameStateMsg) {
+func (t *MPMainMenu) SetMsg(msg tentsuyu.GameStateMsg) {
 	t.gameStateMsg = msg
 }

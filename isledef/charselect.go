@@ -8,7 +8,7 @@ import (
 )
 
 type BattleCharSelect struct {
-	gameStateMsg              GameStateMsg
+	gameStateMsg              tentsuyu.GameStateMsg
 	timer                     int
 	offsetX                   int
 	offsetY                   int
@@ -23,77 +23,77 @@ type BattleCharSelect struct {
 	ghost, vamp, hunter, nure *tentsuyu.BasicObject
 }
 
-func CreateBattleCharSelect(g *Game) *BattleCharSelect {
-	tentsuyu.Components.Camera.SetZoom(2.0)
+func CreateBattleCharSelect(g *tentsuyu.Game) *BattleCharSelect {
+	g.DefaultCamera.SetZoom(2.0)
 	t := &BattleCharSelect{
-		title: tentsuyu.NewTextElement(200, 5, 500, 20, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		title: tentsuyu.NewTextElement(200, 5, 500, 20, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Choose your character and battle with nure!"}, color.White, 16),
 		//[]string{"Test of a Nure-Onna", "(A.K.A. Spaloosh!)"}, color.White, 8),
-		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Challenge your friends to a game of Spaloosh!",
 				""}, color.Black, 16),
 	}
 
 	t.charOptions = []*tentsuyu.MenuElement{
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(20, 150, 200, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Tiffany", "the Ghost"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(20, 150, 200, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Tiffany", "the Ghost"}, color.Black, 18),
 			Action: func() {
 				t.selected = ghostgirl
 			},
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(645, 150, 200, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Petar", "the Vampire"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(645, 150, 200, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Petar", "the Vampire"}, color.Black, 18),
 			Action: func() {
 				t.selected = vampire
 			},
 			Selectable: true,
 		},
 		&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(20, 260, 200, 40, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Archinal", "the Hunter"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(20, 260, 200, 40, g.UIController.ReturnFont(FntSmallPixel), []string{"Archinal", "the Hunter"}, color.Black, 18),
 			Action: func() {
 				t.selected = hunter
 			},
 			Selectable: true,
 		},
 		/*&tentsuyu.MenuElement{
-			UIElement: tentsuyu.NewTextElementStationary(655, 275, 200, 30, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Nure-Onna"}, color.Black, 18),
+			UIElement: tentsuyu.NewTextElementStationary(655, 275, 200, 30, g.UIController.ReturnFont(FntSmallPixel), []string{"Nure-Onna"}, color.Black, 18),
 			Action: func() {
 				t.selected = nure
 			},
 			Selectable: true,
 		},*/
 	}
-	testMenu := tentsuyu.NewMenu()
+	testMenu := tentsuyu.NewMenu(ScreenWidth, ScreenHeight)
 	testMenu.AddElement([]tentsuyu.UIElement{
-		tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Start Battle"}, color.Black, 16),
+		tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Start Battle"}, color.Black, 16),
 	},
 		[]func(){
 			func() {
 				t.gameStateMsg = GameStateMsgReqBattle
-				g.gameData.SetGameMode(GameModeNormalBattle)
-				g.gameData.playerCharacter = t.selected
+				SetGameMode(g.GameData, GameModeNormalBattle)
+				g.GameData.Settings["PlayerCharacer"].ValueText = t.selected
 				if t.selected == "" {
-					g.gameData.playerCharacter = ghostgirl
+					g.GameData.Settings["PlayerCharacer"].ValueText = ghostgirl
 				}
 			},
 		})
 	testMenu.AddElement([]tentsuyu.UIElement{
-		tentsuyu.NewTextElement(0, 0, 300, 25, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Cancel"}, color.Black, 16),
+		tentsuyu.NewTextElement(0, 0, 300, 25, g.UIController.ReturnFont(FntSmallPixel), []string{"Cancel"}, color.Black, 16),
 	},
 		[]func(){
 			func() {
 				t.gameStateMsg = GameStateMsgReqMainMenu
 			},
 		})
-	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
+	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
 		[]func(){func() {
 			/*prevMenu = "BattleCharSelect"
 			BuildStatsMenu()
-			tentsuyu.Components.UIController.ActivateMenu("StatMenu")
-			tentsuyu.Components.UIController.DeActivateMenu(prevMenu)
+			g.UIController.UIController.ActivateMenu("StatMenu")
+			g.UIController.UIController.DeActivateMenu(prevMenu)
 		}})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
 	testMenu.SetBackground(tentsuyu.ImageManager.ReturnImage("topbar-light"), &tentsuyu.BasicImageParts{
 		Sx:     0,
 		Sy:     0,
@@ -147,19 +147,19 @@ func init() {
 
 }
 
-func (t *BattleCharSelect) Update(game *Game) error {
+func (t *BattleCharSelect) Update(game *tentsuyu.Game) error {
 	if t.gameStateMsg == GameStateMsgReqMain {
 		return nil
 	}
 	t.timer++
 
-	t.menu.Update()
+	t.menu.Update(game.Input, 0, 0)
 	for _, o := range t.charOptions {
 		o.UIElement.(*tentsuyu.TextElement).UnHighlighted()
-		o.Update()
+		o.Update(game.Input, 0, 0)
 	}
-	if tentsuyu.Input.LeftClick().JustReleased() {
-		tx, ty := tentsuyu.Input.GetMouseCoords()
+	if game.Input.LeftClick().JustReleased() {
+		tx, ty := game.Input.GetMouseCoords()
 
 		if t.ghost.Contains(tx, ty) {
 			t.selected = ghostgirl
@@ -174,16 +174,16 @@ func (t *BattleCharSelect) Update(game *Game) error {
 			t.selected = nure
 		}*/
 	}
-	if tentsuyu.Input.Button("Escape").JustPressed() {
+	if game.Input.Button("Escape").JustPressed() {
 		t.gameStateMsg = GameStateMsgReqMainMenu
 	}
-	if tentsuyu.Input.Button("Enter").Down() {
+	if game.Input.Button("Enter").Down() {
 		t.gameStateMsg = GameStateMsgReqMain
 	}
 	return nil
 }
 
-func (t *BattleCharSelect) Draw(game *Game) error {
+func (t *BattleCharSelect) Draw(game *tentsuyu.Game) error {
 	/*op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, 40)
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("map"), op); err != nil {
@@ -205,7 +205,7 @@ func (t *BattleCharSelect) Draw(game *Game) error {
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("shenanijam"), op); err != nil {
 		return err
 	}*/
-	game.DrawBackground() //background.Draw(game.screen, true)
+	DrawBackground(game)
 
 	//Nure
 	/*op := &ebiten.DrawImageOptions{}
@@ -234,7 +234,7 @@ func (t *BattleCharSelect) Draw(game *Game) error {
 	op.GeoM.Translate(t.ghost.X, t.ghost.Y)
 	//tentsuyu.ApplyCameraTransform(op, true)
 
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -248,7 +248,7 @@ func (t *BattleCharSelect) Draw(game *Game) error {
 	}
 	op.GeoM.Scale(3, 3)
 	op.GeoM.Translate(t.vamp.X, t.vamp.Y)
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -262,7 +262,7 @@ func (t *BattleCharSelect) Draw(game *Game) error {
 	}
 	op.GeoM.Scale(3, 3)
 	op.GeoM.Translate(t.hunter.X, t.hunter.Y)
-	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
+	if err := game.Screen.DrawImage(game.ImageManager.ReturnImage("spaloosh-sheet"), op); err != nil {
 		return err
 	}
 
@@ -299,19 +299,19 @@ func (t *BattleCharSelect) Draw(game *Game) error {
 		}*/
 	}
 	for _, o := range t.charOptions {
-		o.Draw(game.screen)
+		o.Draw(game.Screen)
 	}
-	t.menu.Draw(game.screen)
-	t.title.Draw(game.screen)
+	t.menu.Draw(game.Screen)
+	t.title.Draw(game.Screen)
 	//t.desc.Draw(game.screen)
 
 	return nil
 }
 
-func (t *BattleCharSelect) Msg() GameStateMsg {
+func (t *BattleCharSelect) Msg() tentsuyu.GameStateMsg {
 	return t.gameStateMsg
 }
 
-func (t *BattleCharSelect) SetMsg(msg GameStateMsg) {
+func (t *BattleCharSelect) SetMsg(msg tentsuyu.GameStateMsg) {
 	t.gameStateMsg = msg
 }

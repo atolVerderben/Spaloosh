@@ -13,7 +13,7 @@ import (
 var GameServer *network.GameServer
 
 type MPStage struct {
-	gameStateMsg GameStateMsg
+	gameStateMsg tentsuyu.GameStateMsg
 	timer        int
 	offsetX      int
 	offsetY      int
@@ -27,13 +27,13 @@ type MPStage struct {
 	connected    bool
 }
 
-func CreateMPStage(g *Game) *MPStage {
-	tentsuyu.Components.Camera.SetZoom(2.0)
+func CreateMPStage(g *tentsuyu.Game) *MPStage {
+	g.DefaultCamera.SetZoom(2.0)
 	t := &MPStage{
-		title: tentsuyu.NewTextElement(300, 5, 400, 20, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		title: tentsuyu.NewTextElement(300, 5, 400, 20, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Waiting for a player to join..."}, color.White, 16),
 		//[]string{"Test of a Nure-Onna", "(A.K.A. Spaloosh!)"}, color.White, 8),
-		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, tentsuyu.Components.ReturnFont(FntSmallPixel),
+		desc: tentsuyu.NewTextElement(25, 275, 1300, 400, g.UIController.ReturnFont(FntSmallPixel),
 			[]string{"Oh! How rude to sneak up on me while I wash my hair!",
 				"I am a Nure-Onna, but you can call me Nure.",
 				"How about we play a little game to make up for scaring me?",
@@ -48,34 +48,34 @@ func CreateMPStage(g *Game) *MPStage {
 				"I get your blood!"}, color.Black, 16),
 	}
 
-	testMenu := tentsuyu.NewMenu()
-	if g.gameData.gameMode == GameModeOnlineJoin {
+	testMenu := tentsuyu.NewMenu(ScreenHeight, ScreenWidth)
+	if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin {
 		testMenu.AddElement([]tentsuyu.UIElement{
-			tentsuyu.NewTextElement(0, 0, 155, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Retry"}, color.Black, 16),
+			tentsuyu.NewTextElement(0, 0, 155, 50, g.UIController.ReturnFont(FntSmallPixel), []string{"Retry"}, color.Black, 16),
 		},
 			[]func(){
 				func() {
-					if g.gameData.gameMode == GameModeOnlineJoin && g.player.conn == nil {
-						SERVER := g.gameData.server
-						PORT := g.gameData.port
+					if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin && GamePlayer.conn == nil {
+						SERVER := g.GameData.Settings["Server"].ValueText
+						PORT := g.GameData.Settings["Port"].ValueText
 						conn, _ := net.Dial("tcp", SERVER+":"+PORT)
 
-						if conn != nil && g.gameData.gameMode == GameModeOnlineJoin {
-							g.player.conn = conn.(*net.TCPConn)
+						if conn != nil && g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin {
+							GamePlayer.conn = conn.(*net.TCPConn)
 						}
 					}
-					if g.player.conn != nil && g.gameData.gameMode == GameModeOnlineJoin {
-						//g.player.bufferReader = bufio.NewReader(g.player.conn)
-						//g.player.commandDecoder = json.NewDecoder(g.player.conn)
-						g.player.wsDecoder = gob.NewDecoder(g.player.conn)
-						g.player.commEncoder = gob.NewEncoder(g.player.conn)
-						go HandleConnection(g.player, g)
+					if GamePlayer.conn != nil && g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin {
+						//GamePlayer.bufferReader = bufio.NewReader(GamePlayer.conn)
+						//GamePlayer.commandDecoder = json.NewDecoder(GamePlayer.conn)
+						GamePlayer.wsDecoder = gob.NewDecoder(GamePlayer.conn)
+						GamePlayer.commEncoder = gob.NewEncoder(GamePlayer.conn)
+						go HandleConnection(GamePlayer, g)
 					}
 				},
 			})
 	}
 	testMenu.AddElement([]tentsuyu.UIElement{
-		tentsuyu.NewTextElement(0, 0, 155, 50, tentsuyu.Components.ReturnFont(FntSmallPixel), []string{"Cancel"}, color.Black, 16),
+		tentsuyu.NewTextElement(0, 0, 155, 50, g.UIController.ReturnFont(FntSmallPixel), []string{"Cancel"}, color.Black, 16),
 	},
 		[]func(){
 			func() {
@@ -83,14 +83,14 @@ func CreateMPStage(g *Game) *MPStage {
 				//g.gameData.SetGameMode(GameModeOnlineHost)
 			},
 		})
-	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
+	/*testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Continue"}, color.Black, 24)},
 		[]func(){func() {
 			/*prevMenu = "MPStage"
 			BuildStatsMenu()
-			tentsuyu.Components.UIController.ActivateMenu("StatMenu")
-			tentsuyu.Components.UIController.DeActivateMenu(prevMenu)
+			g.UIController.UIController.ActivateMenu("StatMenu")
+			g.UIController.UIController.DeActivateMenu(prevMenu)
 		}})
-	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, tentsuyu.Components.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
+	testMenu.AddElement([]tentsuyu.UIElement{tentsuyu.NewTextElement(0, 0, 200, 25, g.UIController.ReturnFont("font1"), []string{"Quit"}, color.Black, 24)}, []func(){func() { os.Exit(0) }})
 	testMenu.SetBackground(tentsuyu.ImageManager.ReturnImage("topbar-light"), &tentsuyu.BasicImageParts{
 		Sx:     0,
 		Sy:     0,
@@ -109,53 +109,53 @@ func CreateMPStage(g *Game) *MPStage {
 		NotCentered: true,
 	}
 	t.currMenu = "A"
-	if g.gameData.gameMode == GameModeOnlineRoom {
+	if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineRoom {
 		comm := &network.Command{
 			CommType: network.CommandJoinRoom,
-			Name:     g.gameData.joinedRoom,
+			Name:     g.GameData.Settings["JoinedRoom"].ValueText,
 		}
-		err := g.player.commEncoder.Encode(comm)
+		err := GamePlayer.commEncoder.Encode(comm)
 
 		if err != nil {
 			fmt.Println(err.Error())
-			g.player.conn.Close()
-			g.player.conn = nil
+			GamePlayer.conn.Close()
+			GamePlayer.conn = nil
 		}
 	}
-	if g.gameData.gameMode == GameModeOnlineHost {
-		GameServer = network.CreateGameServer(g.gameData.port)
+	if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineHost {
+		GameServer = network.CreateGameServer(g.GameData.Settings["Port"].ValueText)
 		GameServer.Run()
 	}
-	if g.gameData.gameMode == GameModeOnlineHost {
+	if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineHost {
 		SERVER := "127.0.0.1"
-		PORT := g.gameData.port
+		PORT := g.GameData.Settings["Port"].ValueText
 		conn, _ := net.Dial("tcp", SERVER+":"+PORT)
 		if conn != nil {
-			g.player.conn = conn.(*net.TCPConn)
+			GamePlayer.conn = conn.(*net.TCPConn)
 		}
 	}
-	if g.player.conn != nil && g.gameData.gameMode == GameModeOnlineHost {
-		//g.player.bufferReader = bufio.NewReader(g.player.conn)
-		//g.player.commandDecoder = json.NewDecoder(g.player.conn)
-		g.player.wsDecoder = gob.NewDecoder(g.player.conn)
-		g.player.commEncoder = gob.NewEncoder(g.player.conn)
-		go HandleConnection(g.player, g)
+	if GamePlayer.conn != nil && g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineHost {
+		//GamePlayer.bufferReader = bufio.NewReader(GamePlayer.conn)
+		//GamePlayer.commandDecoder = json.NewDecoder(GamePlayer.conn)
+		GamePlayer.wsDecoder = gob.NewDecoder(GamePlayer.conn)
+		GamePlayer.commEncoder = gob.NewEncoder(GamePlayer.conn)
+		go HandleConnection(GamePlayer, g)
 	}
-	if g.gameData.gameMode == GameModeOnlineJoin && g.player.conn == nil {
-		SERVER := g.gameData.server
-		PORT := g.gameData.port
+	if g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin && GamePlayer.conn == nil {
+		SERVER := g.GameData.Settings["Server"].ValueText
+		PORT := g.GameData.Settings["Port"].ValueText
 		conn, _ := net.Dial("tcp", SERVER+":"+PORT)
 
-		if conn != nil && g.gameData.gameMode == GameModeOnlineJoin {
-			g.player.conn = conn.(*net.TCPConn)
+		if conn != nil && g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin {
+			GamePlayer.conn = conn.(*net.TCPConn)
 		}
 	}
-	if g.player.conn != nil && g.gameData.gameMode == GameModeOnlineJoin {
-		//g.player.bufferReader = bufio.NewReader(g.player.conn)
-		//g.player.commandDecoder = json.NewDecoder(g.player.conn)
-		g.player.wsDecoder = gob.NewDecoder(g.player.conn)
-		g.player.commEncoder = gob.NewEncoder(g.player.conn)
-		go HandleConnection(g.player, g)
+	if GamePlayer.conn != nil && g.GameData.Settings["GameMode"].ValueInt == GameModeOnlineJoin {
+		//GamePlayer.bufferReader = bufio.NewReader(GamePlayer.conn)
+		//GamePlayer.commandDecoder = json.NewDecoder(GamePlayer.conn)
+		GamePlayer.wsDecoder = gob.NewDecoder(GamePlayer.conn)
+		GamePlayer.commEncoder = gob.NewEncoder(GamePlayer.conn)
+		go HandleConnection(GamePlayer, g)
 	}
 	//tentsuyu.SetCustomCursor(30, 30, 30, 482, tentsuyu.ImageManager.ReturnImage("uiSheet"))
 	return t
@@ -166,13 +166,13 @@ func init() {
 
 }
 
-func (t *MPStage) Update(game *Game) error {
+func (t *MPStage) Update(game *tentsuyu.Game) error {
 	if t.gameStateMsg == GameStateMsgReqMain {
 		return nil
 	}
 	t.timer++
 
-	t.menu.Update()
+	t.menu.Update(game.Input, 0, 0)
 	/*if tentsuyu.Input.LeftClick().JustReleased() {
 		tx, ty := tentsuyu.Input.GetMouseCoords()
 
@@ -180,7 +180,7 @@ func (t *MPStage) Update(game *Game) error {
 			t.gameStateMsg = GameStateMsgReqMain
 		}
 	}*/
-	if tentsuyu.Input.Button("Enter").Down() {
+	if game.Input.Button("Enter").Down() {
 		t.gameStateMsg = GameStateMsgReqMain
 	}
 
@@ -191,7 +191,7 @@ func (t *MPStage) Update(game *Game) error {
 	return nil
 }
 
-func (t *MPStage) Draw(game *Game) error {
+func (t *MPStage) Draw(game *tentsuyu.Game) error {
 	/*op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, 40)
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("map"), op); err != nil {
@@ -213,7 +213,7 @@ func (t *MPStage) Draw(game *Game) error {
 	if err := game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("shenanijam"), op); err != nil {
 		return err
 	}*/
-	game.DrawBackground() //background.Draw(game.screen, true)
+	DrawBackground(game) //background.Draw(game.screen, true)
 	/*op := &ebiten.DrawImageOptions{}
 	op.ImageParts = &tentsuyu.BasicImageParts{
 		Sx:     SpalooshSheet.Frames[frameNureOnna].Frame["x"],
@@ -235,17 +235,17 @@ func (t *MPStage) Draw(game *Game) error {
 
 	game.screen.DrawImage(tentsuyu.ImageManager.ReturnImage("textBubble"), op)*/
 
-	t.menu.Draw(game.screen)
-	t.title.Draw(game.screen)
+	t.menu.Draw(game.Screen)
+	t.title.Draw(game.Screen)
 	//t.desc.Draw(game.screen)
 
 	return nil
 }
 
-func (t *MPStage) Msg() GameStateMsg {
+func (t *MPStage) Msg() tentsuyu.GameStateMsg {
 	return t.gameStateMsg
 }
 
-func (t *MPStage) SetMsg(msg GameStateMsg) {
+func (t *MPStage) SetMsg(msg tentsuyu.GameStateMsg) {
 	t.gameStateMsg = msg
 }
